@@ -3,18 +3,18 @@
 
 name: Build and test F# library
 
-env:
-  FS_LIBRARY_DIR: ./MolecularProgrammingLib
-
 on:
   push:
     branches: [ "main" ]
     paths:
-      "${{ env.FS_LIBRARY_DIR }}/**"
+      "./MolecularProgrammingLib/**"
   pull_request:
     branches: [ "main" ]
     paths:
-      "${{ env.FS_LIBRARY_DIR }}/**"
+      "./MolecularProgrammingLib/**"
+          
+env:
+  FS_LIBRARY_DIR: ./MolecularProgrammingLib
 
 jobs:
   build:
