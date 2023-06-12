@@ -213,11 +213,10 @@ let moduleToTree =
     | Sqrt(s1, s2) -> Node("sqrt", [ speciesToTree s1; speciesToTree s2 ])
     | Cmp(s1, s2) -> Node("cmp", [ speciesToTree s1; speciesToTree s2 ])
 
-let rec exprToTree =
+let exprToTree =
     function
-    | [ Species x ] -> Node(x, [])
-    | Species(s) :: xs -> Node(s, [ exprToTree xs ])
-    | _ -> failwith "Invalid expression"
+    | [] -> failwith "Expression cannot be empty"
+    | Species s0 :: es -> List.fold (fun rest (Species s) -> Node("+", [ Node(s, []); rest ])) (Node(s0, [])) es
 
 let commandToTree =
     function
