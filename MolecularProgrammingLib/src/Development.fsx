@@ -190,9 +190,20 @@ let pConc = pPair "conc[" "," "]" (pSpecies, pInteger) Conc
 
 let pRoot = pStep <|> pConc
 
-let pCRN = pListBlock "crn={" "," "}" pRoot CRN
+let pCRN = 
+    parse {
+        let! _ = symbol "crn" 
+        let! _ = symbol "="
+        let! crn = pListBlock "{" "," "};" pRoot CRN
+        return crn
+    }
 
-let parse str = run (pCRN .>> eof) str
+let resToCRN (x: ParserResult<CRN, unit>) =
+    match x with
+    | Success(crn, _, _) -> crn
+    | Failure(errorMsg, _, _) -> failwith errorMsg
+
+let parse str = run (pCRN .>> eof) str |> resToCRN
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 
@@ -266,11 +277,6 @@ let rootToTree =
 let crnToTree (CRN(rootList)) =
     Node("CRN", List.map rootToTree rootList)
 
-let resToCRN (x: ParserResult<CRN, unit>) =
-    match x with
-    | Success(crn, _, _) -> crn
-    | Failure(errorMsg, _, _) -> failwith errorMsg
-
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 
@@ -283,9 +289,100 @@ let resToCRN (x: ParserResult<CRN, unit>) =
 
 
 let counter =
-    "crn={conc[c,10 ], conc[ cInitial ,20 ],conc[one ,1], conc[zero ,0],step[{sub[c,one,cnext ],cmp[c,zero],rxn[a+b+c+d,a+b+e+f,2]}],step[{
-ifGT[{ ld[cnext ,c] }],ifLE[{ ld[ cInitial ,c] }]}]}"
+    "crn={
+        conc[c,10 ], 
+        conc[ cInitial ,20 ],
+        conc[one ,1], 
+        conc[zero ,0],
+        step[{
+            sub[c,one,cnext ],
+            cmp[c,zero],
+            rxn[a+b+c+d,a+b+e+f,2]
+        }],
+        step[{
+            ifGT[{ 
+                ld[cnext ,c] 
+            }],
+            ifLE[{ 
+                ld[ cInitial ,c] 
+            }]
+        }]
+    };"
 
-parse counter
+let piApprox = 
+    "crn={
+        conc[ four , 4],
+        conc[ divisor1 , 1],
+        conc[ divisor2 , 3],
+        conc[ pi , 0],
+        step[{
+            div[ four , divisor1 , factor1 ],
+            add[ divisor1 , four , divisor1Next ],
+            div[ four , divisor2 , factor2 ],
+            add[ divisor2 , four , divisor2Next ],
+            sub[ factor1 , factor2 , factor ],
+            add[ pi , factor , piNext]
+        }],
+        step[{
+            ld[ divisor1Next , divisor1 ],
+            ld[ divisor2Next , divisor2 ],
+            ld[piNext, pi ]
+        }]
+    };"
+
+let eulerApprox = 
+    "crn = {
+        conc[e, 1], 
+        conc[element, 1],
+        conc[ divisor , 1], 
+        conc[one, 1],
+        conc[ divisorMultiplier , 1],
+        step[{
+            div[element, divisor , elementNext],
+            add[ divisor , one, divisorNext ],
+            add[e, elementNext, eNext]
+        }],
+        step[{
+            ld[elementNext, element ],
+            ld[ divisorNext , divisor ],
+            ld[eNext, e]
+        }]
+    };"
+
+let integerSqrt = 
+    "crn = {
+        conc[one ,1], 
+        conc[n, 31 ],
+        step[{
+            add[z,one,znext ],
+            mul[znext, znext ,zpow],
+            cmp[zpow,n]
+        }],
+        step[{
+            ifLT[{ ld[ znext , z ]}],
+            ifGE[{ ld[z ,out ]}]
+        }]
+    };"
+
+let gcd = 
+    "crn = {
+        conc[a, 243 ],
+        conc[b, 9350 ],
+        step[{
+            ld[a, atmp],
+            ld[b, btmp],
+            cmp[a,b]
+        }],
+        step[{
+            ifGT[{ sub[atmp,btmp,a] }],
+            ifLT[{ sub[btmp,atmp,b] }]
+        }]
+    };"
+
+printfn "Counter:\n%O" (parse counter)
+printfn "Pi Approximation:\n%O" (parse piApprox)
+printfn "Eulers Number Approximation:\n%O" (parse eulerApprox)
+printfn "Integer Sqrt:\n%O" (parse integerSqrt)
+printfn "GCD:\n%O" (parse gcd)
 
 //drawTree (counter |> parse |> resToCRN |> crnToTree) 8 "counter.svg" None
