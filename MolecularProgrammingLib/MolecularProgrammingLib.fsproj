@@ -11,6 +11,7 @@
     
     <!-- Script -->
     <Compile Include="src/script.fsx" />
+    <None Include="src/Development.fsx" />
   </ItemGroup>
 
 </Project>
