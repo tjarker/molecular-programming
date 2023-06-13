@@ -190,9 +190,9 @@ let pConc = pPair "conc[" "," "]" (pSpecies, pInteger) Conc
 
 let pRoot = pStep <|> pConc
 
-let pCRN = 
+let pCRN =
     parse {
-        let! _ = symbol "crn" 
+        let! _ = symbol "crn"
         let! _ = symbol "="
         let! crn = pListBlock "{" "," "};" pRoot CRN
         return crn
@@ -309,7 +309,7 @@ let counter =
         }]
     };"
 
-let piApprox = 
+let piApprox =
     "crn={
         conc[ four , 4],
         conc[ divisor1 , 1],
@@ -330,7 +330,7 @@ let piApprox =
         }]
     };"
 
-let eulerApprox = 
+let eulerApprox =
     "crn = {
         conc[e, 1], 
         conc[element, 1],
@@ -349,7 +349,7 @@ let eulerApprox =
         }]
     };"
 
-let integerSqrt = 
+let integerSqrt =
     "crn = {
         conc[one ,1], 
         conc[n, 31 ],
@@ -364,7 +364,7 @@ let integerSqrt =
         }]
     };"
 
-let gcd = 
+let gcd =
     "crn = {
         conc[a, 243 ],
         conc[b, 9350 ],
@@ -388,46 +388,58 @@ printfn "GCD:\n%O" (parse gcd)
 //drawTree (counter |> parse |> resToCRN |> crnToTree) 8 "counter.svg" None
 
 
-let moduleToString = function
-    | Ld(Species sp1,Species sp2) -> $"ld[{sp1},{sp2}]"
-    | Add(Species sp1,Species sp2,Species sp3) -> $"add[{sp1},{sp2},{sp3}]"
-    | Sub(Species sp1,Species sp2,Species sp3) -> $"sub[{sp1},{sp2},{sp3}]"
-    | Mul(Species sp1,Species sp2,Species sp3) -> $"mul[{sp1},{sp2},{sp3}]"
-    | Div(Species sp1,Species sp2,Species sp3) -> $"div[{sp1},{sp2},{sp3}]"
-    | Sqrt(Species sp1,Species sp2) -> $"sqrt[{sp1},{sp2}]"
-    | Cmp(Species sp1,Species sp2) -> $"cmp[{sp1},{sp2}]"
+let moduleToString =
+    function
+    | Ld(Species sp1, Species sp2) -> $"ld[{sp1},{sp2}]"
+    | Add(Species sp1, Species sp2, Species sp3) -> $"add[{sp1},{sp2},{sp3}]"
+    | Sub(Species sp1, Species sp2, Species sp3) -> $"sub[{sp1},{sp2},{sp3}]"
+    | Mul(Species sp1, Species sp2, Species sp3) -> $"mul[{sp1},{sp2},{sp3}]"
+    | Div(Species sp1, Species sp2, Species sp3) -> $"div[{sp1},{sp2},{sp3}]"
+    | Sqrt(Species sp1, Species sp2) -> $"sqrt[{sp1},{sp2}]"
+    | Cmp(Species sp1, Species sp2) -> $"cmp[{sp1},{sp2}]"
 
-let speciesListToString xs = xs |> List.map (fun (Species name) -> name ) |> String.concat "+ " 
+let speciesListToString xs =
+    xs |> List.map (fun (Species name) -> name) |> String.concat "+ "
 
-let computationToString = function
+let computationToString =
+    function
     | Mod(modu) -> moduleToString modu
-    | Rxn(sps1,sps2,n) ->
+    | Rxn(sps1, sps2, n) ->
         let lhs = speciesListToString sps1
         let rhs = speciesListToString sps2
         $"rxn[{lhs},{rhs},{n}]"
 
-let conditionalToString = function 
+let conditionalToString =
+    function
     | IfGT xs -> "ifGT[{" + (List.map computationToString xs |> String.concat ", ") + "}]"
     | IfGE xs -> "ifGE[{" + (List.map computationToString xs |> String.concat ", ") + "}]"
     | IfEQ xs -> "ifEQ[{" + (List.map computationToString xs |> String.concat ", ") + "}]"
     | IfLT xs -> "ifLT[{" + (List.map computationToString xs |> String.concat ", ") + "}]"
     | IfLE xs -> "ifLE[{" + (List.map computationToString xs |> String.concat ", ") + "}]"
-    
-let commandToString = function 
+
+let commandToString =
+    function
     | Comp comp -> computationToString comp
     | Cond cond -> conditionalToString cond
 
-let rootToString = function
+let rootToString =
+    function
     | Conc(Species sp, n) -> $"conc[{sp}, {n}]"
-    | Step cs -> 
+    | Step cs ->
         let str = cs |> List.map commandToString |> String.concat ", "
         $"step[{{{str}}}]"
 
-let crnToString (CRN roots) = 
+let crnToString (CRN roots) =
     let rs = roots |> List.map rootToString |> String.concat ", "
     $"crn = {{{rs}}};"
 
-let removeWhiteSpace str = str |> String.collect (fun c -> if c = ' ' or c = '\n' or c = '\t' or c = '\r' then "" else string c)
+let removeWhiteSpace str =
+    str
+    |> String.collect (fun c ->
+        if c = ' ' or c = '\n' or c = '\t' or c = '\r' then
+            ""
+        else
+            string c)
 
 
 //////////////////////////////////////////////////////////////////////////////////////////////
@@ -459,68 +471,72 @@ let stringGen =
 
 
 
-let speciesGen env = 
+let speciesGen env =
     gen {
         let! i = Gen.choose (0, List.length env - 1)
         return env.[i]
     }
 
-let pairGen env (g0,g1) constr = 
+let pairGen env (g0, g1) constr =
     gen {
         let! a = g0 env
         let! b = g1 env
-        return constr(a,b)
+        return constr (a, b)
     }
 
-let tripleGen env (g0,g1,g2) constr = 
+let tripleGen env (g0, g1, g2) constr =
     gen {
         let! a = g0 env
         let! b = g1 env
         let! c = g2 env
-        return constr(a,b,c)
+        return constr (a, b, c)
     }
 
 let listGen env g constr =
     gen {
         let! xs = Gen.nonEmptyListOf (g env)
-        return constr(xs)
+        return constr (xs)
     }
 
-let moduleGen env = 
-    let twoArgs = List.map (pairGen env (speciesGen,speciesGen)) [Ld;Sqrt;Cmp]
-    let threeArgs = List.map (tripleGen env (speciesGen,speciesGen,speciesGen)) [Add;Sub;Mul;Div]
+let moduleGen env =
+    let twoArgs = List.map (pairGen env (speciesGen, speciesGen)) [ Ld; Sqrt; Cmp ]
+
+    let threeArgs =
+        List.map (tripleGen env (speciesGen, speciesGen, speciesGen)) [ Add; Sub; Mul; Div ]
+
     Gen.oneof (twoArgs @ threeArgs)
 
-let computationGen env = 
-    Gen.map Mod (moduleGen env)
+let computationGen env = Gen.map Mod (moduleGen env)
 
-let conditionalGen env = 
-    let conGens = List.map (listGen env computationGen) [IfGT;IfGE;IfEQ;IfLT;IfLE]
-    Gen.oneof conGens 
+let conditionalGen env =
+    let conGens = List.map (listGen env computationGen) [ IfGT; IfGE; IfEQ; IfLT; IfLE ]
+    Gen.oneof conGens
 
-let commandGen env = 
-    Gen.oneof [
-        Gen.map Comp (computationGen env);
-        Gen.map Cond (conditionalGen env)
-    ]
+let commandGen env =
+    Gen.oneof [ Gen.map Comp (computationGen env); Gen.map Cond (conditionalGen env) ]
 
 let concGen =
-    Gen.map2 (fun name value -> Conc(Species name,value)) stringGen (Gen.choose(0,1000))
+    Gen.map2 (fun name value -> Conc(Species name, value)) stringGen (Gen.choose (0, 1000))
 
 let stepGen env =
     gen {
-        let! len = Gen.choose(1,20)
+        let! len = Gen.choose (1, 20)
         let! cmds = Gen.listOfLength len (commandGen env)
         return Step(cmds)
     }
 
-let crnGen = 
+let crnGen =
     gen {
         let! concs = Gen.nonEmptyListOf concGen
-        let species = List.map (function
-            | Conc(sp, value) -> sp
-            | _ -> failwith "expected only concentrations") concs
-        let! steps =  Gen.nonEmptyListOf (stepGen species)
+
+        let species =
+            List.map
+                (function
+                | Conc(sp, value) -> sp
+                | _ -> failwith "expected only concentrations")
+                concs
+
+        let! steps = Gen.nonEmptyListOf (stepGen species)
         return CRN(concs @ steps)
     }
 
@@ -531,7 +547,7 @@ type CrnGenerator =
             override x.Generator = crnGen
             override x.Shrinker t = Seq.empty }
 
-Arb.register<CrnGenerator>()
+Arb.register<CrnGenerator> ()
 
 let prog = Gen.sample 3 1 crnGen |> List.head
 printfn "%O" prog
@@ -539,7 +555,7 @@ drawTree (prog |> crnToTree) 6 "prog.svg" None
 
 
 
-let prop prog = 
+let prop prog =
     let str = prog |> crnToString
     str = (str |> parse |> crnToString)
 
