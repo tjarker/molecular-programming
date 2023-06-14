@@ -353,7 +353,7 @@ let eulerApprox =
 let integerSqrt =
     "crn = {
         conc[one ,1], 
-        conc[n, 31 ],
+        conc[n, 10 ],
         step[{
             add[z,one,znext ],
             mul[znext, znext ,zpow],
@@ -761,4 +761,42 @@ let interpreter (CRN roots) =
 
 let counterInterp = interpreter (parse counter)
 
-for state in (Seq.take 10 counterInterp) do printfn "%O" state
+for state in (Seq.take 10 counterInterp) do
+    printfn "%O" state
+
+
+///////////////////////////////////////////////////////////////////////////////////////////
+/// Visualization with Plotly.NET
+#r "nuget: Plotly.NET, 4.0.0"
+
+open Plotly.NET
+
+let updateMapFromKVN n map k (v: float) =
+    match Map.tryFind k map with
+    | Some(vn) ->
+        let (_, y') = List.last vn
+        Map.add k (vn @ [ (n, y'); (n, v) ]) map
+    | None -> Map.add k [ (n, v) ] map
+// TODO: Check for existing keys that are not updated in a state
+
+let updateMapFromState speciesInclude map (State(env, n, _)) =
+    Map.fold (updateMapFromKVN n) map (Map.filter (fun species _ -> (List.contains species speciesInclude)) env)
+
+let plotSpecies (Species(name), points) =
+    let (xs, ys) = List.unzip points
+
+    Chart.Line(xs, ys)
+    |> Chart.withTraceInfo (Name = name)
+    |> Chart.withLineStyle (Width = 2.0, Dash = StyleParam.DrawingStyle.Solid)
+
+let visualize (species: Species list) (states: StateType seq) =
+    let plotMap = Seq.fold (updateMapFromState species) Map.empty states
+    Map.toList plotMap |> List.map plotSpecies |> Chart.combine |> Chart.show
+
+// visualize [ Species "c" ] (Seq.take 20 counterInterp)
+
+integerSqrt
+|> parse
+|> interpreter
+|> Seq.take 50
+|> visualize [ Species "z"; Species "zpow"; Species "out" ]
