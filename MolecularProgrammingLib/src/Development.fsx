@@ -28,7 +28,7 @@ type Command =
     | Cond of Conditional
 
 type Root =
-    | Conc of Species * int
+    | Conc of Species * float
     | Step of Command list
 
 type CRN = CRN of Root list
@@ -66,6 +66,8 @@ let token p = p .>> spaces
 let symbol s = token (pstring s)
 
 let pInteger: Parser<int32, unit> = token pint32
+
+let pFloat: Parser<float, unit> = token pfloat
 
 let pIdentifier: Parser<string, unit> =
     let charOrDigit c = isLetter c || isDigit c
@@ -186,7 +188,7 @@ let pCommand =
 
 let pStep = pListBlock "step[{" "," "}]" pCommand Step
 
-let pConc = pPair "conc[" "," "]" (pSpecies, pInteger) Conc
+let pConc = pPair "conc[" "," "]" (pSpecies, pFloat) Conc
 
 let pRoot = pStep <|> pConc
 
@@ -321,7 +323,7 @@ let piApprox =
             div[ four , divisor2 , factor2 ],
             add[ divisor2 , four , divisor2Next ],
             sub[ factor1 , factor2 , factor ],
-            add[ pi , factor , piNext]
+            add[ pi , factor , piNext]  
         }],
         step[{
             ld[ divisor1Next , divisor1 ],
@@ -379,11 +381,14 @@ let gcd =
         }]
     };"
 
-printfn "Counter:\n%O" (parse counter)
-printfn "Pi Approximation:\n%O" (parse piApprox)
-printfn "Eulers Number Approximation:\n%O" (parse eulerApprox)
-printfn "Integer Sqrt:\n%O" (parse integerSqrt)
-printfn "GCD:\n%O" (parse gcd)
+//printfn "Counter:\n%O" (parse counter)
+//printfn "Pi Approximation:\n%O" (parse piApprox)
+//printfn "Eulers Number Approximation:\n%O" (parse eulerApprox)
+//printfn "Integer Sqrt:\n%O" (parse integerSqrt)
+//printfn "GCD:\n%O" (parse gcd)
+
+
+let progs = [ counter; piApprox; eulerApprox; integerSqrt; gcd ]
 
 //drawTree (counter |> parse |> resToCRN |> crnToTree) 8 "counter.svg" None
 
@@ -436,7 +441,7 @@ let crnToString (CRN roots) =
 let removeWhiteSpace str =
     str
     |> String.collect (fun c ->
-        if c = ' ' or c = '\n' or c = '\t' or c = '\r' then
+        if List.contains c [ ' '; '\n'; '\t'; '\r' ] then
             ""
         else
             string c)
@@ -516,7 +521,7 @@ let commandGen env =
     Gen.oneof [ Gen.map Comp (computationGen env); Gen.map Cond (conditionalGen env) ]
 
 let concGen =
-    Gen.map2 (fun name value -> Conc(Species name, value)) stringGen (Gen.choose (0, 1000))
+    Gen.map2 (fun name value -> Conc(Species name, value)) stringGen (Gen.choose (0, 1000) |> Gen.map float)
 
 let stepGen env =
     gen {
@@ -549,14 +554,136 @@ type CrnGenerator =
 
 Arb.register<CrnGenerator> ()
 
-let prog = Gen.sample 3 1 crnGen |> List.head
-printfn "%O" prog
-drawTree (prog |> crnToTree) 6 "prog.svg" None
+
+let astToStringAndBackProp prog =
+    let ori = (prog |> crnToString |> removeWhiteSpace)
+    let test = (prog |> crnToString |> parse |> crnToString |> removeWhiteSpace)
+    ori = test
 
 
 
-let prop prog =
-    let str = prog |> crnToString
-    str = (str |> parse |> crnToString)
 
-Check.Quick prop
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+/// Well-formed predicates
+
+let findCmp cmds =
+    List.exists
+        (function
+        | Comp(Mod(Cmp _)) -> true
+        | _ -> false)
+        cmds
+
+let findConditional cmds =
+    List.exists
+        (function
+        | Cond _ -> true
+        | _ -> false)
+        cmds
+
+(* A cmp statement is required in a prior step in order to check any conditionals *)
+let rec cmpBeforeConditionals =
+    function
+    | [] -> true
+    | Step(cmds) :: rest ->
+        if findConditional cmds then false
+        elif findCmp cmds then true
+        else cmpBeforeConditionals rest
+    | _ :: rest -> cmpBeforeConditionals rest
+
+assert (cmpBeforeConditionals [ Step [ Comp(Mod(Cmp(Species "a", Species "b"))) ]; Step [ Cond(IfEQ([])) ] ])
+
+(* Either, a species’s value is used in computations in one step or it is over-
+written by one computation *)
+
+let getModuleSources =
+    function
+    | Ld(a, b) -> [ a ]
+    | Add(a, b, c) -> [ a; b ]
+    | Sub(a, b, c) -> [ a; b ]
+    | Mul(a, b, c) -> [ a; b ]
+    | Div(a, b, c) -> [ a; b ]
+    | Sqrt(a, b) -> [ a ]
+    | Cmp(a, b) -> [ a; b ]
+
+let getComputationSources =
+    function
+    | Mod (mod) -> Set(getModuleSources (mod))
+    | Rxn(r, p, n) -> Set r
+
+let getConditionalComputations =
+    function
+    | IfGT(cmds) -> cmds
+    | IfGE(cmds) -> cmds
+    | IfEQ(cmds) -> cmds
+    | IfLT(cmds) -> cmds
+    | IfLE(cmds) -> cmds
+
+let getCommandSources =
+    function
+    | Comp(comp) -> getComputationSources comp
+    | Cond(cond) ->
+        cond
+        |> getConditionalComputations
+        |> List.map getComputationSources
+        |> Set.unionMany
+
+
+
+
+let rec getLoads =
+    function
+    | Comp(Mod(Ld(a, b))) -> Set [ b ]
+    | Cond(cond) ->
+        cond
+        |> getConditionalComputations
+        |> List.map Comp
+        |> List.map getLoads
+        |> Set.unionMany
+    | _ -> Set.empty
+
+
+let getStepSourcesAndLoads (Step(cmds)) =
+    (cmds |> List.map getCommandSources |> Set.unionMany, cmds |> List.map getLoads |> Set.unionMany)
+
+let rec noLoadUseProp =
+    function
+    | [] -> true
+    | Conc(_, _) :: rest -> noLoadUseProp rest
+    | (Step(_) as step) :: rest ->
+        let (sources, loads) = getStepSourcesAndLoads step
+        let overlap = Set.intersect sources loads
+        printfn "%A\n%A\n%A" sources loads overlap
+        (Set.isEmpty overlap) && (noLoadUseProp rest)
+
+
+let isWellFormedCrn (CRN prog) =
+    cmpBeforeConditionals prog && noLoadUseProp prog
+
+
+//Check.Quick isWellFormedCrn
+
+//Check.Quick astToStringAndBackProp
+
+//let simpleCrn = CRN [ Conc(Species "A", 1) ]
+//assert (simpleCrn = (simpleCrn |> crnToString |> parse))
+
+
+
+
+///////////////////////////////////////////////////////////////////////////////////////////
+/// Interpreter
+
+
+type Flag = bool * bool
+type State = State of Map<Species,float> * int * Flag
+
+module State = 
+    let update 
+
+let applyModule mod  =
+    match mod with
+    | Ld(a,b) -> Map.add b (Map.find a)
+    | Add(a,b,c) -> Map.add c (Map.find a + Map.find b)
+
+let apply step state = 
