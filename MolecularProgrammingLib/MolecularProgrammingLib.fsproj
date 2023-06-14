@@ -5,10 +5,29 @@
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
     <RootNamespace>DrawingTreesLib</RootNamespace>
     <StartupObject>src/script.fsx</StartupObject>
+    <!-- <OtherFlags>- -sig:src/CrnTypes.fsi</OtherFlags>  -->
   </PropertyGroup>
 
   <ItemGroup>
-    
+    <!-- Nuget packages -->
+    <PackageReference Include="FParsec" Version="1.1.1" />
+    <PackageReference Include="FsCheck" Version="2.16.5" />
+    <PackageReference Include="Plotly.NET" Version="4.0.0" />
+    <Reference Include="DrawingTreesLib">
+      <HintPath>lib\DrawingTreesLib.dll</HintPath>
+    </Reference>
+
+    <!-- Source files -->
+    <Compile Include="src/CrnTypes.fs" />
+    <Compile Include="src/CrnParser.fs" />
+    <Compile Include="src/CrnDrawTree.fs" />
+    <Compile Include="src/CrnString.fs" />
+    <Compile Include="src/CrnGenerator.fs" />
+    <Compile Include="src/CrnTypeChecker.fs" />
+    <Compile Include="src/CrnInterpreter.fs" />
+    <Compile Include="src/CrnVisualizer.fs" />
+    <Compile Include="src/CrnExamples.fs" />
+
     <!-- Script -->
     <Compile Include="src/script.fsx" />
     <None Include="src/Development.fsx" />
