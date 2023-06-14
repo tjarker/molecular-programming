@@ -680,7 +680,11 @@ type StateType = State of Map<Species, float> * int * Flag
 module State =
     let init concs = State(Map concs, 0, (false, false))
     let update key value (State(env, n, flag)) = State(Map.add key value env, n, flag)
-    let get key (State(env, n, flag)) = Map.find key env
+    let get key (State(env, n, flag)) = 
+        match Map.tryFind key env with
+        | Some(value) -> value
+        | None -> 0.0
+
     let setFlag equal greater (State(env, n, flag)) = State(env, n, (equal, greater))
     let tick (State(env, n, flag)) = State(env, n + 1, flag)
 
@@ -708,7 +712,7 @@ let applyConditional (State(_, _, (eq, gt)) as state) =
     function
     | IfGT(comps) -> if gt then List.fold applyComputation state comps else state
     | IfGE(comps) ->
-        if gt && eq then
+        if gt || eq then
             List.fold applyComputation state comps
         else
             state
@@ -719,7 +723,7 @@ let applyConditional (State(_, _, (eq, gt)) as state) =
         else
             state
     | IfLE(comps) ->
-        if (not gt && eq) then
+        if (not gt || eq) then
             List.fold applyComputation state comps
         else
             state
@@ -759,9 +763,8 @@ let interpreter (CRN roots) =
         Some(state, newState))
 
 
-let counterInterp = interpreter (parse counter)
 
-for state in (Seq.take 10 counterInterp) do
+for state in (integerSqrt |> parse |> interpreter |> Seq.take 10) do
     printfn "%O" state
 
 
@@ -798,5 +801,5 @@ let visualize (species: Species list) (states: StateType seq) =
 integerSqrt
 |> parse
 |> interpreter
-|> Seq.take 50
+|> Seq.take 100
 |> visualize [ Species "z"; Species "zpow"; Species "out" ]
