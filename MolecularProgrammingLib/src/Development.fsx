@@ -642,15 +642,15 @@ let rec getLoads =
     | _ -> Set.empty
 
 
-let getStepSourcesAndLoads (Step(cmds)) =
+let getCmdsSourcesAndLoads cmds =
     (cmds |> List.map getCommandSources |> Set.unionMany, cmds |> List.map getLoads |> Set.unionMany)
 
 let rec noLoadUseProp =
     function
     | [] -> true
     | Conc(_, _) :: rest -> noLoadUseProp rest
-    | (Step(_) as step) :: rest ->
-        let (sources, loads) = getStepSourcesAndLoads step
+    | Step(cmds) :: rest ->
+        let (sources, loads) = getCmdsSourcesAndLoads cmds
         let overlap = Set.intersect sources loads
         printfn "%A\n%A\n%A" sources loads overlap
         (Set.isEmpty overlap) && (noLoadUseProp rest)
@@ -680,7 +680,8 @@ type StateType = State of Map<Species, float> * int * Flag
 module State =
     let init concs = State(Map concs, 0, (false, false))
     let update key value (State(env, n, flag)) = State(Map.add key value env, n, flag)
-    let get key (State(env, n, flag)) = 
+
+    let get key (State(env, n, flag)) =
         match Map.tryFind key env with
         | Some(value) -> value
         | None -> 0.0
@@ -779,7 +780,7 @@ let updateMapFromKVN n map k (v: float) =
     | Some(vn) ->
         let (_, y') = List.last vn
         Map.add k (vn @ [ (n, y'); (n, v) ]) map
-    | None -> Map.add k [ (n, v) ] map
+    | None -> Map.add k [ (0, 0.0); (n, 0.0); (n, v) ] map
 // TODO: Check for existing keys that are not updated in a state
 
 let updateMapFromState speciesInclude map (State(env, n, _)) =
@@ -794,12 +795,19 @@ let plotSpecies (Species(name), points) =
 
 let visualize (species: Species list) (states: StateType seq) =
     let plotMap = Seq.fold (updateMapFromState species) Map.empty states
-    Map.toList plotMap |> List.map plotSpecies |> Chart.combine |> Chart.show
-
-// visualize [ Species "c" ] (Seq.take 20 counterInterp)
+    let sortedSpecies = List.map (fun sp -> (sp, (Map.find sp plotMap))) species
+    sortedSpecies |> List.rev |> List.map plotSpecies |> Chart.combine |> Chart.show
 
 integerSqrt
 |> parse
 |> interpreter
-|> Seq.take 100
-|> visualize [ Species "z"; Species "zpow"; Species "out" ]
+|> Seq.take 10
+|> visualize [ Species "out"; Species "z"; Species "zpow" ]
+
+piApprox |> parse |> interpreter |> Seq.take 1000 |> visualize [ Species "pi" ]
+
+eulerApprox
+|> parse
+|> interpreter
+|> Seq.take 1000
+|> visualize [ Species "e" ]
