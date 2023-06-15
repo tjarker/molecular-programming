@@ -45,25 +45,11 @@ let nextState rxns state =
 
 let scanForSpecies rxns = List.fold (fun set (r,p,_) -> Set.unionMany [set; Set r; Set p]) Set.empty rxns |> Set.toList
 
-let simulator (concs: list<string * float>) (rxns: Reaction list) =
-    let defaultSpecies =
-        [ ("Hsub", 0.0)
-          ("Epsilon", 0.5)
-          ("XplusEpsilon", 0.0)
-          ("YplusEpsilon", 0.0)
-          ("XGTY", 1.0)
-          ("XLTY", 0.0)
-          ("YGTX", 0.0)
-          ("YLTX", 1.0)
-          ("CmpHelper", 0.0) ] |> List.map (fun (n, c) -> (Species n, c))
-    let userSpecies = concs |> List.map (fun (n, c) -> (Species n, c))
-
-    let allSpecies = scanForSpecies rxns |> List.map (fun sp -> (sp,0.0))
+let simulator (rxns: Reaction list, concs: Map<Species, float>) =
 
     let state =
         State(
-            (allSpecies @ defaultSpecies @ userSpecies)
-            |> Map.ofList,
+            concs,
             0,
             (false, false)
         )
