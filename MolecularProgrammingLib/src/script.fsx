@@ -17,4 +17,7 @@ open CrnVisualizer
 
 printfn "Molecular Programming Library"
 
-crn3 |> simulator [("A", 6.0); ("B", 2.0); ("C", 0.0)] |> Seq.take 6000 |> visualize ["A"; "B"; "C"]
+crn4
+|> simulator [ ("A", 6.0); ("B", 2.0); ("C", 0.0) ]
+|> Seq.take 6000
+|> visualize [ "A"; "B"; "C" ]

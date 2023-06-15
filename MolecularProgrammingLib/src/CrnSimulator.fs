@@ -4,6 +4,7 @@ open CrnTypes
 open CrnInterpreter
 
 let dt = 0.001
+
 let rec count y =
     function
     | [] -> 0
@@ -30,14 +31,17 @@ let concChange sp rxns state =
 
 let nextState rxns state =
     let sps = State.getAllSpecies state
+
     let changeMap = sps |> List.map (fun sp -> (sp, concChange sp rxns state))
-    List.fold (fun s' (sp, dif) -> State.update sp (State.get sp state + (dif * dt)) state) state changeMap |> State.tick
+
+    List.fold (fun s' (sp, dif) -> State.update sp ((State.get sp state) + (dif * dt)) s') state changeMap
+    |> State.tick
 
 
-let simulator (concs: list<string * float>) (rxns: Reaction list)  =
+let simulator (concs: list<string * float>) (rxns: Reaction list) =
 
-    let state = State(concs |> List.map (fun (n,c) -> (Species n,c)) |> Map.ofList, 0, (false,false))
+    let state =
+        State(concs |> List.map (fun (n, c) -> (Species n, c)) |> Map.ofList, 0, (false, false))
 
     state
-    |> Seq.unfold (fun (State(env, n, flags) as state) -> 
-        Some(state, state |> nextState rxns))
+    |> Seq.unfold (fun (State(env, n, flags) as state) -> Some(state, state |> nextState rxns))
