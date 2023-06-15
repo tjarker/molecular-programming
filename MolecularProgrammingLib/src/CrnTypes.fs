@@ -11,9 +11,11 @@ type Module =
     | Sqrt of Species * Species
     | Cmp of Species * Species
 
+type Reaction = Species list * Species list * int
+
 type Computation =
     | Mod of Module
-    | Rxn of Species list * Species list * int
+    | Rxn of Reaction
 
 type Conditional =
     | IfGT of Computation list

@@ -21,7 +21,8 @@ let plotSpecies (Species(name), points) =
     |> Chart.withTraceInfo (Name = name)
     |> Chart.withLineStyle (Width = 2.0, Dash = StyleParam.DrawingStyle.Solid)
 
-let visualize (species: Species list) (states: StateType seq) =
+let visualize (speciesNames: string list) (states: StateType seq) =
+    let species = List.map Species speciesNames
     let plotMap = Seq.fold (updateMapFromState species) Map.empty states
     let sortedSpecies = List.map (fun sp -> (sp, (Map.find sp plotMap))) species
     sortedSpecies |> List.rev |> List.map plotSpecies |> Chart.combine |> Chart.show

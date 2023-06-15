@@ -11,22 +11,10 @@
 open CrnTypes
 open CrnString
 open CrnParser
+open CrnSimulator
+open CrnExamples
+open CrnVisualizer
 
 printfn "Molecular Programming Library"
 
-let integerSqrt =
-    "crn = {
-        conc[one ,1], 
-        conc[n, 10 ],
-        step[{
-            add[z,one,znext ],
-            mul[znext, znext ,zpow],
-            cmp[zpow,n]
-        }],
-        step[{
-            ifLT[{ ld[ znext , z ]}],
-            ifGE[{ ld[z ,out ]}]
-        }]
-    };"
-
-printfn "%s" (integerSqrt |> parse |> crnToString)
+crn3 |> simulator [("A", 6.0); ("B", 2.0); ("C", 0.0)] |> Seq.take 6000 |> visualize ["A"; "B"; "C"]
