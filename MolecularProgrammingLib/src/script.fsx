@@ -21,45 +21,50 @@ printfn "Molecular Programming Library"
 
 
 
-let rec moduleToReaction = 
+let rec moduleToReaction =
     function
-    | Ld(a,b) -> ([([a],[a;b],1.0);([b],[],1.0)],[])
-    | Add(a,b,c) -> ([([a],[a;c],1.0);([b],[b;c],1.0);([c],[],1.0)],[])
-    | Sub(a,b,c) -> ([([a],[a;c],1.0);([b],[b;Species "Hsub"],1.0);([c],[],1.0);([c;Species "Hsub"],[],1.0)],[])
-    | Mul(a,b,c) -> ([([a;b],[a;b;c],1.0);([c],[],1.0)],[])
-    | Div(a,b,c) -> ([([a],[a;c],1.0);([b;c],[b],1.0)],[])
-    | Sqrt(a,b) -> ([([a],[a;b],1.0);([b;b],[],0.5)],[])
-    | Cmp(x,y) -> (
-        let epsilon = Species "Epsilon"
-        let xplus = Species "XplusEpsilon"
-        let yplus = Species "YplusEpsilon"
-        let xgty = Species "XGTY"
-        let xlty = Species "XLTY"
-        let ygtx = Species "YGTX"
-        let yltx = Species "YLTX"
-        let cmpHelper = Species "CmpHelper"
-        let (add1,_) = moduleToReaction (Add(x,epsilon,xplus))
-        let (add2,_) = moduleToReaction (Add(y,epsilon,yplus))
-        let norm = [
-            ([xgty; y],[xlty; y],1.0);
-            ([xlty; xplus],[xgty; xplus],1.0);
-            ([ygtx; x],[yltx; x],1.0);
-            ([yltx; yplus],[ygtx; yplus],1.0)
-        ]
-        let approxMajor1 = [
-            ([xgty;xlty],[xlty;cmpHelper],1.0);
-            ([cmpHelper;xlty],[xlty;xlty],1.0);
-            ([xlty;xgty],[xgty;cmpHelper],1.0);
-            ([cmpHelper;xgty],[xgty;xgty],1.0)
-        ]
-        let approxMajor2 = [
-            ([ygtx;yltx],[yltx;cmpHelper],1.0);
-            ([cmpHelper;yltx],[yltx;yltx],1.0);
-            ([yltx;ygtx],[ygtx;cmpHelper],1.0);
-            ([cmpHelper;ygtx],[ygtx;ygtx],1.0)
-        ]
-        (add1 @ add2 @ norm, approxMajor1 @ approxMajor2)
-    )
+    | Ld(a, b) -> ([ ([ a ], [ a; b ], 1.0); ([ b ], [], 1.0) ], [])
+    | Add(a, b, c) -> ([ ([ a ], [ a; c ], 1.0); ([ b ], [ b; c ], 1.0); ([ c ], [], 1.0) ], [])
+    | Sub(a, b, c) ->
+        ([ ([ a ], [ a; c ], 1.0)
+           ([ b ], [ b; Species "Hsub" ], 1.0)
+           ([ c ], [], 1.0)
+           ([ c; Species "Hsub" ], [], 1.0) ],
+         [])
+    | Mul(a, b, c) -> ([ ([ a; b ], [ a; b; c ], 1.0); ([ c ], [], 1.0) ], [])
+    | Div(a, b, c) -> ([ ([ a ], [ a; c ], 1.0); ([ b; c ], [ b ], 1.0) ], [])
+    | Sqrt(a, b) -> ([ ([ a ], [ a; b ], 1.0); ([ b; b ], [], 0.5) ], [])
+    | Cmp(x, y) ->
+        (let epsilon = Species "Epsilon"
+         let xplus = Species "XplusEpsilon"
+         let yplus = Species "YplusEpsilon"
+         let xgty = Species "XGTY"
+         let xlty = Species "XLTY"
+         let ygtx = Species "YGTX"
+         let yltx = Species "YLTX"
+         let cmpHelper = Species "CmpHelper"
+         let (add1, _) = moduleToReaction (Add(x, epsilon, xplus))
+         let (add2, _) = moduleToReaction (Add(y, epsilon, yplus))
+
+         let norm =
+             [ ([ xgty; y ], [ xlty; y ], 1.0)
+               ([ xlty; xplus ], [ xgty; xplus ], 1.0)
+               ([ ygtx; x ], [ yltx; x ], 1.0)
+               ([ yltx; yplus ], [ ygtx; yplus ], 1.0) ]
+
+         let approxMajor1 =
+             [ ([ xgty; xlty ], [ xlty; cmpHelper ], 1.0)
+               ([ cmpHelper; xlty ], [ xlty; xlty ], 1.0)
+               ([ xlty; xgty ], [ xgty; cmpHelper ], 1.0)
+               ([ cmpHelper; xgty ], [ xgty; xgty ], 1.0) ]
+
+         let approxMajor2 =
+             [ ([ ygtx; yltx ], [ yltx; cmpHelper ], 1.0)
+               ([ cmpHelper; yltx ], [ yltx; yltx ], 1.0)
+               ([ yltx; ygtx ], [ ygtx; cmpHelper ], 1.0)
+               ([ cmpHelper; ygtx ], [ ygtx; ygtx ], 1.0) ]
+
+         (add1 @ add2 @ norm, approxMajor1 @ approxMajor2))
 
 
 // (Add(Species "A", Species "B", Species "C"))
@@ -114,6 +119,21 @@ let rec moduleToReaction =
 (Cmp(Species "A", Species "B"))
 |> moduleToReaction
 |> snd
-|> simulator [ ("A", 2.0); ("B", 4.0); ("XGTY",0.38); ("XLTY",0.62); ("YGTX",0.69); ("YLTX",0.3) ]
+|> simulator
+    [ ("A", 2.0)
+      ("B", 4.0)
+      ("XGTY", 0.38)
+      ("XLTY", 0.62)
+      ("YGTX", 0.69)
+      ("YLTX", 0.3) ]
 |> Seq.take 10000
-|> visualize [ "A"; "B"; "XGTY"; "XLTY"; "YGTX"; "YLTX"; "XplusEpsilon"; "YplusEpsilon"; "CmpHelper" ]
+|> visualize
+    [ "A"
+      "B"
+      "XGTY"
+      "XLTY"
+      "YGTX"
+      "YLTX"
+      "XplusEpsilon"
+      "YplusEpsilon"
+      "CmpHelper" ]

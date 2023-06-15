@@ -107,4 +107,5 @@ let crn3 =
       ([ Species "C" ], [], 1.0) ]
 
 let crn4 =
-    [ ([ Species "A" ], [ Species "C" ], 1.0); ([ Species "B" ], [ Species "C" ], 1.0) ]
+    [ ([ Species "A" ], [ Species "C" ], 1.0)
+      ([ Species "B" ], [ Species "C" ], 1.0) ]
