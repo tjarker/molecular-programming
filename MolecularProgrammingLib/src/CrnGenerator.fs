@@ -1,4 +1,4 @@
-module CrnGen
+module CrnGenerator
 
 open FsCheck
 open CrnTypes

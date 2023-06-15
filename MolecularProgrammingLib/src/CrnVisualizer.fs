@@ -4,16 +4,15 @@ open Plotly.NET
 open CrnTypes
 open CrnInterpreter
 
-let updateMapFromKVN n map k (v: float) =
+let updateMapFromKV x map k v =
     match Map.tryFind k map with
     | Some(vn) ->
         let (_, y') = List.last vn
-        Map.add k (vn @ [ (n, y'); (n, v) ]) map
-    | None -> Map.add k [ (0, 0.0); (n, 0.0); (n, v) ] map
-// maybe TODO: Check for existing keys that are not updated in a state
+        Map.add k (vn @ [ (x, y'); (x, v) ]) map
+    | None -> Map.add k [ (0, 0.0); (x, 0.0); (x, v) ] map
 
 let updateMapFromState speciesInclude map (State(env, n, _)) =
-    Map.fold (updateMapFromKVN n) map (Map.filter (fun species _ -> (List.contains species speciesInclude)) env)
+    Map.fold (updateMapFromKV n) map (Map.filter (fun species _ -> (List.contains species speciesInclude)) env)
 
 let plotSpecies (Species(name), points) =
     let (xs, ys) = List.unzip points
