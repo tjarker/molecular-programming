@@ -78,7 +78,7 @@ let pModule =
     <|> pTriple "div[" "," "]" (pSpecies, pSpecies, pSpecies) Div
 
 let pRxn =
-    pTriple "rxn[" "," "]" (pList "+" pSpecies, pList "+" pSpecies, pInteger) Rxn
+    pTriple "rxn[" "," "]" (pList "+" pSpecies, pList "+" pSpecies, pFloat) Rxn
 
 let pComputation =
     pRxn

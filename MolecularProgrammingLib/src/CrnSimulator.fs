@@ -32,16 +32,32 @@ let concChange sp rxns state =
 let nextState rxns state =
     let sps = State.getAllSpecies state
 
-    let changeMap = sps |> List.map (fun sp -> (sp, concChange sp rxns state))
+    let changeMap = sps |> List.map (fun sp -> 
+        let change = concChange sp rxns state
+        //printfn "%f -> %f" (State.get sp state) change
+        (sp, change))
 
     List.fold (fun s' (sp, dif) -> State.update sp ((State.get sp state) + (dif * dt)) s') state changeMap
     |> State.tick
 
 
 let simulator (concs: list<string * float>) (rxns: Reaction list) =
+    let defaultSpecies = [
+        ("Hsub", 0.0); 
+        ("Epsilon", 0.5); 
+        ("XplusEpsilon",0.0);
+        ("YplusEpsilon",0.0);
+        //("XGTY",1.0);
+        //("XLTY",0.0);
+        //("YGTX",0.0);
+        //("YLTX",1.0);
+        ("CmpHelper",0.0)
+    ] 
 
     let state =
-        State(concs |> List.map (fun (n, c) -> (Species n, c)) |> Map.ofList, 0, (false, false))
+        State((defaultSpecies @ concs) |> List.map (fun (n, c) -> (Species n, c)) |> Map.ofList, 0, (false, false))
 
     state
-    |> Seq.unfold (fun (State(env, n, flags) as state) -> Some(state, state |> nextState rxns))
+    |> Seq.unfold (fun (State(env, n, flags) as state) -> 
+        //printfn "%O" state
+        Some(state, state |> nextState rxns))

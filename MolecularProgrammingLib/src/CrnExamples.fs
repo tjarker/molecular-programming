@@ -96,15 +96,15 @@ let examples = [ counter; piApprox; eulerApprox; integerSqrt; gcd ]
 open CrnTypes
 
 let crn1 =
-    [ ([ Species "A"; Species "B" ], [ Species "A"; Species "B"; Species "C" ], 1)
-      ([ Species "C" ], [], 1) ]
+    [ ([ Species "A"; Species "B" ], [ Species "A"; Species "B"; Species "C" ], 1.0)
+      ([ Species "C" ], [], 1.0) ]
 
-let crn2 = [ ([ Species "A"; Species "B" ], [], 1) ]
+let crn2 = [ ([ Species "A"; Species "B" ], [], 1.0) ]
 
 let crn3 =
-    [ ([ Species "A" ], [ Species "A"; Species "C" ], 1)
-      ([ Species "B" ], [ Species "B"; Species "C" ], 1)
-      ([ Species "C" ], [], 1) ]
+    [ ([ Species "A" ], [ Species "A"; Species "C" ], 1.0)
+      ([ Species "B" ], [ Species "B"; Species "C" ], 1.0)
+      ([ Species "C" ], [], 1.0) ]
 
 let crn4 =
-    [ ([ Species "A" ], [ Species "C" ], 1); ([ Species "B" ], [ Species "C" ], 1) ]
+    [ ([ Species "A" ], [ Species "C" ], 1.0); ([ Species "B" ], [ Species "C" ], 1.0) ]

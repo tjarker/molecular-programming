@@ -11,7 +11,7 @@ type Module =
     | Sqrt of Species * Species
     | Cmp of Species * Species
 
-type Reaction = Species list * Species list * int
+type Reaction = Species list * Species list * float
 
 type Computation =
     | Mod of Module
