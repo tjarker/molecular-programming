@@ -47,10 +47,10 @@ let simulator (concs: list<string * float>) (rxns: Reaction list) =
         ("Epsilon", 0.5); 
         ("XplusEpsilon",0.0);
         ("YplusEpsilon",0.0);
-        //("XGTY",1.0);
-        //("XLTY",0.0);
-        //("YGTX",0.0);
-        //("YLTX",1.0);
+        ("XGTY",1.0);
+        ("XLTY",0.0);
+        ("YGTX",0.0);
+        ("YLTX",1.0);
         ("CmpHelper",0.0)
     ] 
 
