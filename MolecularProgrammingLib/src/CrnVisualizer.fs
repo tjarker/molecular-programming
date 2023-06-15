@@ -9,7 +9,7 @@ let updateMapFromKV x map k v =
     | Some(vn) ->
         let (_, y') = List.last vn
         Map.add k (vn @ [ (x, y'); (x, v) ]) map
-    | None -> Map.add k [ (0, 0.0); (x, 0.0); (x, v) ] map
+    | None -> Map.add k ((if x <> 0 then [ (0, 0.0); (x, 0.0) ] else []) @ [ (x, v) ]) map
 
 let updateMapFromState speciesInclude map (State(env, n, _)) =
     Map.fold (updateMapFromKV n) map (Map.filter (fun species _ -> (List.contains species speciesInclude)) env)
