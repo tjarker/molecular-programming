@@ -116,24 +116,48 @@ let rec moduleToReaction =
 // |> Seq.take 10000
 // |> visualize [ "A"; "B"; "XGTY"; "XLTY"; "YGTX"; "YLTX"; "XplusEpsilon"; "YplusEpsilon" ]
 
-(Cmp(Species "A", Species "B"))
-|> moduleToReaction
-|> snd
-|> simulator
-    [ ("A", 2.0)
-      ("B", 4.0)
-      ("XGTY", 0.38)
-      ("XLTY", 0.62)
-      ("YGTX", 0.69)
-      ("YLTX", 0.3) ]
-|> Seq.take 10000
-|> visualize
-    [ "A"
-      "B"
-      "XGTY"
-      "XLTY"
-      "YGTX"
-      "YLTX"
-      "XplusEpsilon"
-      "YplusEpsilon"
-      "CmpHelper" ]
+// (Cmp(Species "A", Species "B"))
+// |> moduleToReaction
+// |> snd
+// |> simulator
+//     [ ("A", 2.0)
+//       ("B", 4.0)
+//       ("XGTY", 0.38)
+//       ("XLTY", 0.62)
+//       ("YGTX", 0.69)
+//       ("YLTX", 0.3) ]
+// |> Seq.take 10000
+// |> visualize
+//     [ "A"
+//       "B"
+//       "XGTY"
+//       "XLTY"
+//       "YGTX"
+//       "YLTX"
+//       "XplusEpsilon"
+//       "YplusEpsilon"
+//       "CmpHelper" ]
+
+
+let creatOscillatorReactions (steps: int) =
+    assert (steps > 0)
+    let n = steps * 3
+    let root = Species "X0"
+    let rxns = List.fold (fun (curr, rxns) i ->
+            let next = if i < (n-1) then Species $"X{i + 1}" else root
+            let rxn = ([ curr; next ], [ next; next ], 1.0)
+            (next, rxn :: rxns)) (root, []) [ 0..(n-1) ] |> snd
+    let inits = [("X0",1.0); ("X1",0.9)] @ (List.map (fun i ->  ($"X{i}", 1e-10)) [2..(n-1)])
+    let stepCatalysts = List.map (fun i -> 3*i) [0..(steps-1)]
+    (rxns,stepCatalysts,inits)
+
+let steps = 10
+let (rxns, sts, inits) = creatOscillatorReactions steps
+rxns
+|> simulator inits
+|> Seq.take 1000
+|> visualize (List.map (fun i -> $"X{i}") [0..(steps*3-1)])
+printfn "%A" sts
+
+let bindToCatalyst cat (r,p,n) = (cat::r, cat::p, n)
+

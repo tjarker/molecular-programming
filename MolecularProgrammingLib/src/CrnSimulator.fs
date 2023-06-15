@@ -3,7 +3,7 @@ module CrnSimulator
 open CrnTypes
 open CrnInterpreter
 
-let dt = 0.001
+let dt = 0.01
 
 let rec count y =
     function
@@ -43,6 +43,8 @@ let nextState rxns state =
     |> State.tick
 
 
+let scanForSpecies rxns = List.fold (fun set (r,p,_) -> Set.unionMany [set; Set r; Set p]) Set.empty rxns |> Set.toList
+
 let simulator (concs: list<string * float>) (rxns: Reaction list) =
     let defaultSpecies =
         [ ("Hsub", 0.0)
@@ -53,12 +55,14 @@ let simulator (concs: list<string * float>) (rxns: Reaction list) =
           ("XLTY", 0.0)
           ("YGTX", 0.0)
           ("YLTX", 1.0)
-          ("CmpHelper", 0.0) ]
+          ("CmpHelper", 0.0) ] |> List.map (fun (n, c) -> (Species n, c))
+    let userSpecies = concs |> List.map (fun (n, c) -> (Species n, c))
+
+    let allSpecies = scanForSpecies rxns |> List.map (fun sp -> (sp,0.0))
 
     let state =
         State(
-            (defaultSpecies @ concs)
-            |> List.map (fun (n, c) -> (Species n, c))
+            (allSpecies @ defaultSpecies @ userSpecies)
             |> Map.ofList,
             0,
             (false, false)
