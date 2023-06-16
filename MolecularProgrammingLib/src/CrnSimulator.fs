@@ -43,16 +43,13 @@ let nextState rxns state =
     |> State.tick
 
 
-let scanForSpecies rxns = List.fold (fun set (r,p,_) -> Set.unionMany [set; Set r; Set p]) Set.empty rxns |> Set.toList
+let scanForSpecies rxns =
+    List.fold (fun set (r, p, _) -> Set.unionMany [ set; Set r; Set p ]) Set.empty rxns
+    |> Set.toList
 
 let simulator (rxns: Reaction list, concs: Map<Species, float>) =
 
-    let state =
-        State(
-            concs,
-            0,
-            (false, false)
-        )
+    let state = State(concs, 0, (false, false))
 
     state
     |> Seq.unfold (fun (State(env, n, flags) as state) ->
