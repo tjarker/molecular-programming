@@ -18,92 +18,105 @@ open CrnSimulator
 
 printfn "Molecular Programming Library"
 
-let HSub = Species "HSub"
+let subHelper = "SubHelper"
 let epsilon = Species "Epsilon"
-let xplus = Species "XplusEpsilon"
-let yplus = Species "YplusEpsilon"
+let cmpOffset = "CmpOffset"
 let xgty = Species "XGTY"
 let xlty = Species "XLTY"
 let ygtx = Species "YGTX"
 let yltx = Species "YLTX"
-let cmpHelperXY = Species "CmpHelperXY"
-let cmpHelperYX = Species "CmpHelperYX"
+let cmpHelper = "CmpHelper"
 
 let bindToCatalyst (r,p,n) cat= (cat::r, cat::p, n)
+
 
 let bindToCatalysts cats rxns = 
     List.map (fun rxn -> List.fold bindToCatalyst rxn cats) rxns
 
-let rec moduleToReaction step cats =
-    let c0 = Species $"X{step}"
-    let c1 = Species $"X{step+1}"
+
+
+
+let getNextHelper helperName helperMap =
+    let helperId = 
+        match Map.tryFind helperName helperMap with
+        | Some n -> n
+        | None -> 0
+    let newHelperMap = Map.add subHelper (helperId+1) helperMap
+    let helper = Species(subHelper + (helperId.ToString()))
+    (helper, newHelperMap)
+
+let rec compare step cats helperMap initMap x y xgty xlty=
+    let bindToLocalContext = bindToCatalysts ((Species $"X{step}")::cats)
+    let bindToNextContext = bindToCatalysts ((Species $"X{step+1}")::cats)
+    let (offsetHelper, helperMap') = getNextHelper cmpOffset helperMap
+    let (cmpHelper, helperMap'') = getNextHelper cmpHelper helperMap'
+    let (_,_,add) = moduleToReaction step cats Map.empty Map.empty (Add(x, epsilon, offsetHelper))
+    let norm =
+            [ ([ xgty; y ], [ xlty; y ], 1.0)
+              ([ xlty; offsetHelper ], [ xgty; offsetHelper ], 1.0) ]
+    let approxMajor =
+            [ ([ xgty; xlty ], [ xlty; cmpHelper ], 1.0)
+              ([ cmpHelper; xlty ], [ xlty; xlty ], 1.0)
+              ([ xlty; xgty ], [ xgty; cmpHelper ], 1.0)
+              ([ cmpHelper; xgty ], [ xgty; xgty ], 1.0) ]
+    let thisStep = (add @ norm) |> bindToLocalContext
+    let nextStep = approxMajor |> bindToNextContext
+    let initMap' = List.fold (fun acc (s,v) -> Map.add s v acc) initMap [(offsetHelper,0.0);(xgty,0.5);(xlty,0.5);(cmpHelper,0.0)]
+    (helperMap, initMap', thisStep @ nextStep)
+and moduleToReaction step cats helperMap initMap =
+    let bindToLocalContext = bindToCatalysts ((Species $"X{step}")::cats)
+    let bindToNextContext = bindToCatalysts ((Species $"X{step+1}")::cats)
     function
     | Ld(a, b) -> 
-        [
+        let rxn = [
             ([ a ], [ a; b ], 1.0); 
             ([ b ], [], 1.0) 
         ] 
-        |> bindToCatalysts (c0::cats)
+        (helperMap, initMap, rxn |> bindToLocalContext)
 
     | Add(a, b, c) -> 
-        [ 
+        let rxn = [ 
             ([ a ], [ a; c ], 1.0); 
             ([ b ], [ b; c ], 1.0); 
             ([ c ], [], 1.0) 
         ]
-        |> bindToCatalysts (c0::cats)
-
+        (helperMap, initMap, rxn |> bindToLocalContext)
     | Sub(a, b, c) ->
-        [ 
+        let (helper, newHelperMap) = getNextHelper subHelper helperMap
+        let newInitMap = Map.add helper 0.0 initMap
+        let rxn = [ 
             ([ a ], [ a; c ], 1.0);
-            ([ b ], [ b; HSub ], 1.0);
+            ([ b ], [ b; helper ], 1.0);
             ([ c ], [], 1.0);
-            ([ c; HSub ], [], 1.0) 
+            ([ c; helper ], [], 1.0) 
         ]
-        |> bindToCatalysts (c0::cats)
+        (newHelperMap, newInitMap, rxn |> bindToLocalContext)
         
     | Mul(a, b, c) -> 
-        [ 
+        let rxn = [ 
             ([ a; b ], [ a; b; c ], 1.0); 
             ([ c ], [], 1.0) 
         ]
-        |> bindToCatalysts (c0::cats)
+        (helperMap, initMap, rxn |> bindToLocalContext)
 
     | Div(a, b, c) -> 
-        [ 
+        let rxn = [ 
             ([ a ], [ a; c ], 1.0); 
             ([ b; c ], [ b ], 1.0) 
         ]
-        |> bindToCatalysts (c0::cats)
+        (helperMap, initMap, rxn |> bindToLocalContext)
 
     | Sqrt(a, b) -> 
-        [ 
+        let rxn = [ 
             ([ a ], [ a; b ], 1.0); 
             ([ b; b ], [], 0.5) 
         ]
-        |> bindToCatalysts (c0::cats)
+        (helperMap, initMap, rxn |> bindToLocalContext)
 
-    | Cmp(x, y) ->          
-        let add1 = moduleToReaction step cats (Add(x, epsilon, xplus))
-        let add2 = moduleToReaction step cats (Add(y, epsilon, yplus))
-        let norm =
-            [ ([ xgty; y ], [ xlty; y ], 1.0)
-              ([ xlty; xplus ], [ xgty; xplus ], 1.0)
-              ([ ygtx; x ], [ yltx; x ], 1.0)
-              ([ yltx; yplus ], [ ygtx; yplus ], 1.0) ]
-        let approxMajor1 =
-            [ ([ xgty; xlty ], [ xlty; cmpHelperXY ], 1.0)
-              ([ cmpHelperXY; xlty ], [ xlty; xlty ], 1.0)
-              ([ xlty; xgty ], [ xgty; cmpHelperXY ], 1.0)
-              ([ cmpHelperXY; xgty ], [ xgty; xgty ], 1.0) ]
-        let approxMajor2 =
-            [ ([ ygtx; yltx ], [ yltx; cmpHelperYX ], 1.0)
-              ([ cmpHelperYX; yltx ], [ yltx; yltx ], 1.0)
-              ([ yltx; ygtx ], [ ygtx; cmpHelperYX ], 1.0)
-              ([ cmpHelperYX; ygtx ], [ ygtx; ygtx ], 1.0) ]
-        let thisStep = (add1 @ add2 @ norm) |> bindToCatalysts (c0::cats)
-        let nextStep = (approxMajor1 @ approxMajor2) |> bindToCatalysts (c1::cats)
-        thisStep @ nextStep
+    | Cmp(x, y) ->
+        let (helperMap', initMap', firstCmp) = compare step cats helperMap initMap x y xgty xlty
+        let (helperMap'', initMap'', secondCmp) = compare step cats helperMap' initMap' y x ygtx yltx 
+        (helperMap'', initMap'', firstCmp @ secondCmp)
          
 
 
@@ -205,7 +218,7 @@ let computationToReactions step cats=
     let c0 = Species $"X{step}"
     function
     | Mod(m) -> moduleToReaction step cats m
-    | Rxn(rxn) -> [rxn] |> bindToCatalysts (c0::cats)
+    | Rxn(rxn) -> (Map.empty, Map.empty, [rxn] |> bindToCatalysts (c0::cats)
 
 let getConditionalComputations =
     function
