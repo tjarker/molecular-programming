@@ -26,7 +26,8 @@ let xgty = Species "XGTY"
 let xlty = Species "XLTY"
 let ygtx = Species "YGTX"
 let yltx = Species "YLTX"
-let cmpHelper = Species "CmpHelper"
+let cmpHelperXY = Species "CmpHelperXY"
+let cmpHelperYX = Species "CmpHelperYX"
 
 let bindToCatalyst (r,p,n) cat= (cat::r, cat::p, n)
 
@@ -91,15 +92,15 @@ let rec moduleToReaction step cats =
               ([ ygtx; x ], [ yltx; x ], 1.0)
               ([ yltx; yplus ], [ ygtx; yplus ], 1.0) ]
         let approxMajor1 =
-            [ ([ xgty; xlty ], [ xlty; cmpHelper ], 1.0)
-              ([ cmpHelper; xlty ], [ xlty; xlty ], 1.0)
-              ([ xlty; xgty ], [ xgty; cmpHelper ], 1.0)
-              ([ cmpHelper; xgty ], [ xgty; xgty ], 1.0) ]
+            [ ([ xgty; xlty ], [ xlty; cmpHelperXY ], 1.0)
+              ([ cmpHelperXY; xlty ], [ xlty; xlty ], 1.0)
+              ([ xlty; xgty ], [ xgty; cmpHelperXY ], 1.0)
+              ([ cmpHelperXY; xgty ], [ xgty; xgty ], 1.0) ]
         let approxMajor2 =
-            [ ([ ygtx; yltx ], [ yltx; cmpHelper ], 1.0)
-              ([ cmpHelper; yltx ], [ yltx; yltx ], 1.0)
-              ([ yltx; ygtx ], [ ygtx; cmpHelper ], 1.0)
-              ([ cmpHelper; ygtx ], [ ygtx; ygtx ], 1.0) ]
+            [ ([ ygtx; yltx ], [ yltx; cmpHelperYX ], 1.0)
+              ([ cmpHelperYX; yltx ], [ yltx; yltx ], 1.0)
+              ([ yltx; ygtx ], [ ygtx; cmpHelperYX ], 1.0)
+              ([ cmpHelperYX; ygtx ], [ ygtx; ygtx ], 1.0) ]
         let thisStep = (add1 @ add2 @ norm) |> bindToCatalysts (c0::cats)
         let nextStep = (approxMajor1 @ approxMajor2) |> bindToCatalysts (c1::cats)
         thisStep @ nextStep
@@ -185,7 +186,7 @@ let creatOscillatorReactions (steps: int) =
     let root = Species "X0"
     let rxns = List.fold (fun (curr, rxns) i ->
             let next = if i < (n-1) then Species $"X{i + 1}" else root
-            let rxn = ([ curr; next ], [ next; next ], 3.0)
+            let rxn = ([ curr; next ], [ next; next ], 3.5)
             (next, rxn :: rxns)) (root, []) [ 0..(n-1) ] |> snd
     let inits = [("X0",0.9); ($"X{n-1}",1.0)] @ (List.map (fun i ->  ($"X{i}", 1e-10)) [1..(n-2)])
     (rxns,inits |> List.map (fun (n,v) -> (Species n,v)))
@@ -217,9 +218,9 @@ let getConditionalComputations =
 let conditionalsCatalysts = 
     function
     | IfGT(_) -> [xgty; yltx]
-    | IfGE(_) -> [xgty; yltx]
+    | IfGE(_) -> [xgty]
     | IfEQ(_) -> [xgty; ygtx] 
-    | IfLE(_) -> [xlty; ygtx]
+    | IfLE(_) -> [ygtx]
     | IfLT(_) -> [xlty; ygtx]
 
 let conditionalToReactions step cond = 
@@ -261,11 +262,11 @@ let crnToReactions (CRN roots) =
           ("Epsilon", 0.5)
           ("XplusEpsilon", 0.0)
           ("YplusEpsilon", 0.0)
-          ("XGTY", 1.0)
-          ("XLTY", 0.0)
-          ("YGTX", 0.0)
-          ("YLTX", 1.0)
-          ("CmpHelper", 0.0) ] |> List.map (fun (n, c) -> (Species n, c))
+          ("XGTY", 0.5)
+          ("XLTY", 0.5)
+          ("YGTX", 0.5)
+          ("YLTX", 0.5)
+          ("CmpHelperXY", 0.0); ("CmpHelperYX",0.0) ] |> List.map (fun (n, c) -> (Species n, c))
 
     let init = List.fold (fun init (s,v) -> Map.add s v init) zeroInits (clockInits @ defaultSpecies @ concs)
     
@@ -282,4 +283,4 @@ let reactionPrettyPrinter (r,p,n) =
 
 
 
-counter |> parse |> crnToReactions |> simulator |> Seq.take 20000 |> visualize ["c";"cnext";"X0";"X3";"XGTY";"XLTY";"YLTX";"YGTX"]
+counter |> parse |> crnToReactions |> simulator |> Seq.take 10000 |> visualize ["c";"cnext";"X0";"X1";"X3";"XGTY";"XLTY";"YLTX";"YGTX"]
