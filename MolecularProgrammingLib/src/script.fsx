@@ -29,43 +29,39 @@ let cmpHelper = "CmpHelper"
 
 let bindToCatalyst (r,p,n) cat= (cat::r, cat::p, n)
 
-
 let bindToCatalysts cats rxns = 
     List.map (fun rxn -> List.fold bindToCatalyst rxn cats) rxns
-
-
-
 
 let getNextHelper helperName helperMap =
     let helperId = 
         match Map.tryFind helperName helperMap with
         | Some n -> n
         | None -> 0
-    let newHelperMap = Map.add subHelper (helperId+1) helperMap
-    let helper = Species(subHelper + (helperId.ToString()))
+    let newHelperMap = Map.add helperName (helperId+1) helperMap
+    let helper = Species(helperName + (helperId.ToString()))
     (helper, newHelperMap)
 
-let rec compare step cats helperMap initMap x y xgty xlty=
+let rec compare step cats helperMap initMap sp1 sp2 sp1gtsp2 sp1ltsp2=
     let bindToLocalContext = bindToCatalysts ((Species $"X{step}")::cats)
     let bindToNextContext = bindToCatalysts ((Species $"X{step+1}")::cats)
     let (offsetHelper, helperMap') = getNextHelper cmpOffset helperMap
     let (cmpHelper, helperMap'') = getNextHelper cmpHelper helperMap'
-    let (_,_,add) = moduleToReaction step cats Map.empty Map.empty (Add(x, epsilon, offsetHelper))
+    let (_,_,add) = moduleToReaction step cats Map.empty Map.empty (Add(sp1, epsilon, offsetHelper))
     let norm =
-            [ ([ xgty; y ], [ xlty; y ], 1.0)
-              ([ xlty; offsetHelper ], [ xgty; offsetHelper ], 1.0) ]
+            [ ([ sp1gtsp2; sp2 ], [ sp1ltsp2; sp2 ], 1.0)
+              ([ sp1ltsp2; offsetHelper ], [ sp1gtsp2; offsetHelper ], 1.0) ]
     let approxMajor =
-            [ ([ xgty; xlty ], [ xlty; cmpHelper ], 1.0)
-              ([ cmpHelper; xlty ], [ xlty; xlty ], 1.0)
-              ([ xlty; xgty ], [ xgty; cmpHelper ], 1.0)
-              ([ cmpHelper; xgty ], [ xgty; xgty ], 1.0) ]
+            [ ([ sp1gtsp2; sp1ltsp2 ], [ sp1ltsp2; cmpHelper ], 1.0)
+              ([ cmpHelper; sp1ltsp2 ], [ sp1ltsp2; sp1ltsp2 ], 1.0)
+              ([ sp1ltsp2; sp1gtsp2 ], [ sp1gtsp2; cmpHelper ], 1.0)
+              ([ cmpHelper; sp1gtsp2 ], [ sp1gtsp2; sp1gtsp2 ], 1.0) ]
     let thisStep = (add @ norm) |> bindToLocalContext
     let nextStep = approxMajor |> bindToNextContext
-    let initMap' = List.fold (fun acc (s,v) -> Map.add s v acc) initMap [(offsetHelper,0.0);(xgty,0.5);(xlty,0.5);(cmpHelper,0.0)]
+    let initMap' = List.fold (fun acc (s,v) -> Map.add s v acc) initMap [(offsetHelper,0.0);(sp1gtsp2,0.5);(sp1ltsp2,0.5);(cmpHelper,0.0)]
     (helperMap, initMap', thisStep @ nextStep)
+
 and moduleToReaction step cats helperMap initMap =
     let bindToLocalContext = bindToCatalysts ((Species $"X{step}")::cats)
-    let bindToNextContext = bindToCatalysts ((Species $"X{step+1}")::cats)
     function
     | Ld(a, b) -> 
         let rxn = [
@@ -118,81 +114,6 @@ and moduleToReaction step cats helperMap initMap =
         let (helperMap'', initMap'', secondCmp) = compare step cats helperMap' initMap' y x ygtx yltx 
         (helperMap'', initMap'', firstCmp @ secondCmp)
          
-
-
-// (Add(Species "A", Species "B", Species "C"))
-// |> moduleToReaction
-// |> fst
-// |> simulator [ ("A", 6.0); ("B", 2.0); ("C", 0.0) ]
-// |> Seq.take 6000
-// |> visualize [ "A"; "B"; "C" ]
-
-// (Sub(Species "A", Species "B", Species "C"))
-// |> moduleToReaction
-// |> fst
-// |> simulator [ ("A", 6.0); ("B", 2.0); ("C", 0.0) ]
-// |> Seq.take 6000
-// |> visualize [ "A"; "B"; "C"; "Hsub" ]
-
-// (Mul(Species "A", Species "B", Species "C"))
-// |> moduleToReaction
-// |> fst
-// |> simulator [ ("A", 6.0); ("B", 2.0); ("C", 0.0) ]
-// |> Seq.take 6000
-// |> visualize [ "A"; "B"; "C" ]
-
-// (Div(Species "A", Species "B", Species "C"))
-// |> moduleToReaction
-// |> fst
-// |> simulator [ ("A", 6.0); ("B", 2.0); ("C", 0.0) ]
-// |> Seq.take 6000
-// |> visualize [ "A"; "B"; "C" ]
-
-// (Ld(Species "A", Species "B"))
-// |> moduleToReaction
-// |> fst
-// |> simulator [ ("A", 6.0); ("B", 2.0) ]
-// |> Seq.take 6000
-// |> visualize [ "A"; "B" ]
-
-// (Sqrt(Species "A", Species "B"))
-// |> moduleToReaction
-// |> fst
-// |> simulator [ ("A", 16.0); ("B", 0.0) ]
-// |> Seq.take 6000
-// |> visualize [ "A"; "B" ]
-
-// (Cmp(Species "A", Species "B"))
-// |> moduleToReaction
-// |> fst
-// |> simulator [ ("A", 2.0); ("B", 4.0) ]
-// |> Seq.take 10000
-// |> visualize [ "A"; "B"; "XGTY"; "XLTY"; "YGTX"; "YLTX"; "XplusEpsilon"; "YplusEpsilon" ]
-
-// (Cmp(Species "A", Species "B"))
-// |> moduleToReaction
-// |> snd
-// |> simulator
-//     [ ("A", 2.0)
-//       ("B", 4.0)
-//       ("XGTY", 0.38)
-//       ("XLTY", 0.62)
-//       ("YGTX", 0.69)
-//       ("YLTX", 0.3) ]
-// |> Seq.take 10000
-// |> visualize
-//     [ "A"
-//       "B"
-//       "XGTY"
-//       "XLTY"
-//       "YGTX"
-//       "YLTX"
-//       "XplusEpsilon"
-//       "YplusEpsilon"
-//       "CmpHelper" ]
-
-
-
 let creatOscillatorReactions (steps: int) =
     assert (steps > 0)
     let n = steps * 3
@@ -204,21 +125,11 @@ let creatOscillatorReactions (steps: int) =
     let inits = [("X0",0.9); ($"X{n-1}",1.0)] @ (List.map (fun i ->  ($"X{i}", 1e-10)) [1..(n-2)])
     (rxns,inits |> List.map (fun (n,v) -> (Species n,v)))
 
-// let steps = 10
-// let (rxns, sts, inits) = creatOscillatorReactions steps
-// rxns
-// |> simulator inits
-// |> Seq.take 1000
-// |> visualize (List.map (fun i -> $"X{i}") [0..(steps*3-1)])
-// printfn "%A" sts
-
-
-
-let computationToReactions step cats= 
+let computationToReactions step cats helperMap initMap = 
     let c0 = Species $"X{step}"
     function
-    | Mod(m) -> moduleToReaction step cats m
-    | Rxn(rxn) -> (Map.empty, Map.empty, [rxn] |> bindToCatalysts (c0::cats)
+    | Mod(m) -> moduleToReaction step cats helperMap initMap m
+    | Rxn((p,r,_) as rxn) -> (Map.empty, Map.empty, [rxn] |> bindToCatalysts (c0::cats))
 
 let getConditionalComputations =
     function
@@ -236,21 +147,22 @@ let conditionalsCatalysts =
     | IfLE(_) -> [ygtx]
     | IfLT(_) -> [xlty; ygtx]
 
-let conditionalToReactions step cond = 
+let conditionalToReactions step cond helperMap initMap = 
     let cats = conditionalsCatalysts cond
     getConditionalComputations cond 
-    |> List.map (computationToReactions step cats)
-    |> List.concat
+    |> List.fold (fun (helperMap', initMap', rxns) comp -> computationToReactions step cats helperMap' initMap' comp) (helperMap, initMap, [])
 
-let commandToReactions step = 
+let commandToReactions step helperMap initMap = 
     function
-    | Comp c -> computationToReactions step [] c
-    | Cond c -> conditionalToReactions step c
+    | Comp c -> computationToReactions step [] helperMap initMap c
+    | Cond c -> conditionalToReactions step c helperMap initMap
 
-let stepToReactions n step =
-    List.map (commandToReactions (n*3)) step |> List.concat
+let stepToReactions n step initMap =
+    List.fold (fun (helperMap', initMap', rxns) -> commandToReactions (n*3) helperMap' initMap') (Map.empty, initMap, []) step
 
 let scanForSpecies rxns = List.fold (fun set (r,p,_) -> Set.unionMany [set; Set r; Set p]) Set.empty rxns |> Set.toList
+
+let enumerate = List.mapi (fun i x -> (i,x))
 
 let crnToReactions (CRN roots) =
     let concs =
@@ -264,36 +176,38 @@ let crnToReactions (CRN roots) =
             | (Step cmds) -> Some(cmds)
             | _ -> None)
     let stepCount = List.length steps
-
-    let rxns = List.mapi stepToReactions steps |> List.concat
-
     
-    let zeroInits = scanForSpecies rxns |> List.map (fun sp -> (sp,0.0)) |> Map.ofList
     let (clockRxns, clockInits) = creatOscillatorReactions stepCount
-    let defaultSpecies =
-        [ ("Hsub", 0.0)
-          ("Epsilon", 0.5)
-          ("XplusEpsilon", 0.0)
-          ("YplusEpsilon", 0.0)
-          ("XGTY", 0.5)
-          ("XLTY", 0.5)
-          ("YGTX", 0.5)
-          ("YLTX", 0.5)
-          ("CmpHelperXY", 0.0); ("CmpHelperYX",0.0) ] |> List.map (fun (n, c) -> (Species n, c))
+    
+    let (helperInits,rxns) = List.fold (fun (initMap, rxns) (i,step) -> 
+        let (_, initMap', rxns') = stepToReactions i step initMap; 
+        (initMap',rxns @ rxns')) (Map.empty,clockRxns) (enumerate steps)
 
-    let init = List.fold (fun init (s,v) -> Map.add s v init) zeroInits (clockInits @ defaultSpecies @ concs)
+    let zeroInits = scanForSpecies rxns |> List.map (fun sp -> (sp,0.0)) |> Map.ofList
+
+    // printfn "%A" helperInits
+    // printfn "%A" clockInits
+    // printfn "%A" concs
+    // for init in  zeroInits do printfn "%O" init
+    
+
+    let init = List.fold (fun init (s,v) -> Map.add s v init) zeroInits (Map.toList helperInits @ clockInits @ concs)
     
     (
-        rxns @ clockRxns,
+        rxns,
         init
     )
         
-
-
 let reactionPrettyPrinter (r,p,n) =
     let formatSpeciesList sps = List.map (fun (Species s) -> s) sps |> String.concat " + "
     sprintf "%s -> %s" (formatSpeciesList r) (formatSpeciesList p) 
 
+// let (rnxs,init) = counter |> parse |> crnToReactions
 
+// for i in init do printfn "%O" i
 
-counter |> parse |> crnToReactions |> simulator |> Seq.take 10000 |> visualize ["c";"cnext";"X0";"X1";"X3";"XGTY";"XLTY";"YLTX";"YGTX"]
+// for rxn in (counter |> parse |> crnToReactions |> fst) do printfn "%O" (reactionPrettyPrinter rxn)
+
+// let subCrn = CRN [ Conc(Species "A", 5.0); Conc(Species "B", 2.0); Step([ Comp(Mod(Sub(Species "A", Species "B", Species "C")))])]
+// for rxn in (subCrn |> crnToReactions |> fst) do printfn "%O" (reactionPrettyPrinter rxn)
+counter |> parse |> crnToReactions |> simulator |> Seq.take 10000 |> visualize ["c"; "cnext"]
