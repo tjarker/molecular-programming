@@ -58,7 +58,7 @@ let rec compare step cats helperMap initMap sp1 sp2 sp1gtsp2 sp1ltsp2=
     let thisStep = (add @ norm) |> bindToLocalContext
     let nextStep = approxMajor |> bindToNextContext
     let initMap' = List.fold (fun acc (s,v) -> Map.add s v acc) initMap [(offsetHelper,0.0);(sp1gtsp2,0.5);(sp1ltsp2,0.5);(cmpHelper,0.0)]
-    (helperMap, initMap', thisStep @ nextStep)
+    (helperMap'', initMap', thisStep @ nextStep)
 
 and moduleToReaction step cats helperMap initMap =
     let bindToLocalContext = bindToCatalysts ((Species $"X{step}")::cats)
@@ -158,7 +158,9 @@ let commandToReactions step helperMap initMap =
     | Cond c -> conditionalToReactions step c helperMap initMap
 
 let stepToReactions n step initMap =
-    List.fold (fun (helperMap', initMap', rxns) -> commandToReactions (n*3) helperMap' initMap') (Map.empty, initMap, []) step
+    List.fold (fun (helperMap, initMap', rxns) com -> 
+        let (helperMap', initMap'', newRxns) = commandToReactions (n*3) helperMap initMap' com
+        (helperMap', initMap'', rxns @ newRxns)) (Map.empty, initMap, []) step
 
 let scanForSpecies rxns = List.fold (fun set (r,p,_) -> Set.unionMany [set; Set r; Set p]) Set.empty rxns |> Set.toList
 
@@ -191,7 +193,7 @@ let crnToReactions (CRN roots) =
     // for init in  zeroInits do printfn "%O" init
     
 
-    let init = List.fold (fun init (s,v) -> Map.add s v init) zeroInits (Map.toList helperInits @ clockInits @ concs)
+    let init = List.fold (fun init (s,v) -> Map.add s v init) zeroInits (Map.toList helperInits @ clockInits @ (((Species "Epsilon", 0.5)::concs)))
     
     (
         rxns,
@@ -210,4 +212,4 @@ let reactionPrettyPrinter (r,p,n) =
 
 // let subCrn = CRN [ Conc(Species "A", 5.0); Conc(Species "B", 2.0); Step([ Comp(Mod(Sub(Species "A", Species "B", Species "C")))])]
 // for rxn in (subCrn |> crnToReactions |> fst) do printfn "%O" (reactionPrettyPrinter rxn)
-counter |> parse |> crnToReactions |> simulator |> Seq.take 10000 |> visualize ["c"; "cnext"]
+counter |> parse |> crnToReactions |> simulator |> Seq.take 15000 |> visualize ["c"; "cnext"; "XGTY"; "YGTX";"XLTY";"YLTX"]
