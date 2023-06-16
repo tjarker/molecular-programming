@@ -41,12 +41,12 @@ let getNextHelper helperName helperMap =
     let helper = Species(helperName + (helperId.ToString()))
     (helper, newHelperMap)
 
-let rec compare step cats helperMap initMap sp1 sp2 sp1gtsp2 sp1ltsp2=
+let rec compare step cats helperMap initMap sp1 sp2 sp1gtsp2 sp1ltsp2 offset=
     let bindToLocalContext = bindToCatalysts ((Species $"X{step}")::cats)
     let bindToNextContext = bindToCatalysts ((Species $"X{step+1}")::cats)
     let (offsetHelper, helperMap') = getNextHelper cmpOffset helperMap
     let (cmpHelper, helperMap'') = getNextHelper cmpHelper helperMap'
-    let (_,_,add) = moduleToReaction step cats Map.empty Map.empty (Add(sp1, epsilon, offsetHelper))
+    let (_,_,add) = moduleToReaction step cats Map.empty Map.empty (Add(sp1, offset, offsetHelper))
     let norm =
             [ ([ sp1gtsp2; sp2 ], [ sp1ltsp2; sp2 ], 1.0)
               ([ sp1ltsp2; offsetHelper ], [ sp1gtsp2; offsetHelper ], 1.0) ]
@@ -110,17 +110,17 @@ and moduleToReaction step cats helperMap initMap =
         (helperMap, initMap, rxn |> bindToLocalContext)
 
     | Cmp(x, y) ->
-        let (helperMap', initMap', firstCmp) = compare step cats helperMap initMap x y xgty xlty
-        let (helperMap'', initMap'', secondCmp) = compare step cats helperMap' initMap' y x ygtx yltx 
-        (helperMap'', initMap'', firstCmp @ secondCmp)
+        let (helperMap', initMap', firstCmp) = compare step cats helperMap initMap x y xgty xlty epsilon
+        let (helperMap'', initMap'', secondCmp) = compare step cats helperMap' initMap' y x ygtx yltx epsilon
+        (helperMap'', initMap'', firstCmp @ secondCmp) 
          
-let creatOscillatorReactions (steps: int) =
+let creatOscillatorReactions speed (steps: int) =
     assert (steps > 0)
     let n = steps * 3
     let root = Species "X0"
     let rxns = List.fold (fun (curr, rxns) i ->
             let next = if i < (n-1) then Species $"X{i + 1}" else root
-            let rxn = ([ curr; next ], [ next; next ], 3.5)
+            let rxn = ([ curr; next ], [ next; next ], speed)
             (next, rxn :: rxns)) (root, []) [ 0..(n-1) ] |> snd
     let inits = [("X0",0.9); ($"X{n-1}",1.0)] @ (List.map (fun i ->  ($"X{i}", 1e-10)) [1..(n-2)])
     (rxns,inits |> List.map (fun (n,v) -> (Species n,v)))
@@ -141,11 +141,11 @@ let getConditionalComputations =
 
 let conditionalsCatalysts = 
     function
-    | IfGT(_) -> [xgty; yltx]
+    | IfGT(_) -> [xgty;xgty;yltx;yltx]
     | IfGE(_) -> [xgty]
     | IfEQ(_) -> [xgty; ygtx] 
     | IfLE(_) -> [ygtx]
-    | IfLT(_) -> [xlty; ygtx]
+    | IfLT(_) -> [xlty;xlty;ygtx;ygtx]
 
 let conditionalToReactions step cond helperMap initMap = 
     let cats = conditionalsCatalysts cond
@@ -168,7 +168,7 @@ let scanForSpecies rxns = List.fold (fun set (r,p,_) -> Set.unionMany [set; Set 
 
 let enumerate = List.mapi (fun i x -> (i,x))
 
-let crnToReactions (CRN roots) =
+let crnToReactions speed (CRN roots) =
     let concs =
         roots
         |> List.choose (function
@@ -181,7 +181,7 @@ let crnToReactions (CRN roots) =
             | _ -> None)
     let stepCount = List.length steps
     
-    let (clockRxns, clockInits) = creatOscillatorReactions stepCount
+    let (clockRxns, clockInits) = creatOscillatorReactions speed stepCount
     
     let (helperInits,rxns) = List.fold (fun (initMap, rxns) (i,step) -> 
         let (_, initMap', rxns') = stepToReactions i step initMap; 
@@ -214,6 +214,19 @@ let reactionPrettyPrinter (r,p,n) =
 
 // let subCrn = CRN [ Conc(Species "A", 5.0); Conc(Species "B", 2.0); Step([ Comp(Mod(Sub(Species "A", Species "B", Species "C")))])]
 // for rxn in (subCrn |> crnToReactions |> fst) do printfn "%O" (reactionPrettyPrinter rxn)
-// counter |> parse |> crnToReactions |> simulator |> Seq.take 15000 |> visualize ["c"; "cnext"; "XGTY"; "YGTX";"XLTY";"YLTX"]
 
-gcd |> parse |> crnToReactions |> simulator |> Seq.take 15000 |> visualize ["a";"b";"X0";"X3";"XLTY";"XGTY";"YGTX";"YLTX"]
+
+let counterL = counter, ["c";"cnext"]
+let gcdL = gcd, ["a";"b";"X0";"X3"]
+let piApproxL = piApprox, ["pi";"divisor1";"divisor2"]
+let eulerApproxL = eulerApprox, ["e"]
+let integerSqrtL = integerSqrt, ["n";"z";"zpow";"out";"znext";"X0";"X3"]
+
+
+let makePlot (crn, labels) = crn |> parse |> (crnToReactions 1.0) |> simulator |> Seq.take 15000 |> visualize labels
+
+// makePlot integerSqrtL
+
+let printReactions prog = for rxn in (prog |> parse |> (crnToReactions 1.0) |> fst) do printfn "%s" (reactionPrettyPrinter rxn)
+
+printReactions integerSqrt

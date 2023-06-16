@@ -3,7 +3,7 @@ module CrnSimulator
 open CrnTypes
 open CrnInterpreter
 
-let dt = 0.01
+let dt = 0.04
 
 let rec count y =
     function
