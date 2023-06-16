@@ -77,8 +77,8 @@ let integerSqrt =
 
 let gcd =
     "crn = {
-        conc[a, 243 ],
-        conc[b, 9350 ],
+        conc[a, 9 ],
+        conc[b, 15 ],
         step[{
             ld[a, atmp],
             ld[b, btmp],

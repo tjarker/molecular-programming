@@ -150,7 +150,9 @@ let conditionalsCatalysts =
 let conditionalToReactions step cond helperMap initMap = 
     let cats = conditionalsCatalysts cond
     getConditionalComputations cond 
-    |> List.fold (fun (helperMap', initMap', rxns) comp -> computationToReactions step cats helperMap' initMap' comp) (helperMap, initMap, [])
+    |> List.fold (fun (helperMap', initMap', rxns) comp -> 
+        let (helperMap', initMap', newRxns) = computationToReactions step cats helperMap' initMap' comp
+        (helperMap', initMap', newRxns @ rxns)) (helperMap, initMap, [])
 
 let commandToReactions step helperMap initMap = 
     function
@@ -212,4 +214,6 @@ let reactionPrettyPrinter (r,p,n) =
 
 // let subCrn = CRN [ Conc(Species "A", 5.0); Conc(Species "B", 2.0); Step([ Comp(Mod(Sub(Species "A", Species "B", Species "C")))])]
 // for rxn in (subCrn |> crnToReactions |> fst) do printfn "%O" (reactionPrettyPrinter rxn)
-counter |> parse |> crnToReactions |> simulator |> Seq.take 15000 |> visualize ["c"; "cnext"; "XGTY"; "YGTX";"XLTY";"YLTX"]
+// counter |> parse |> crnToReactions |> simulator |> Seq.take 15000 |> visualize ["c"; "cnext"; "XGTY"; "YGTX";"XLTY";"YLTX"]
+
+gcd |> parse |> crnToReactions |> simulator |> Seq.take 15000 |> visualize ["a";"b";"X0";"X3";"XLTY";"XGTY";"YGTX";"YLTX"]
