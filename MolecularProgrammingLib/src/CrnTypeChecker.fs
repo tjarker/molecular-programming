@@ -87,5 +87,30 @@ let rec noLoadUseProp =
         printfn "%A\n%A\n%A" sources loads overlap
         (Set.isEmpty overlap) && (noLoadUseProp rest)
 
+let checkModuleArgs =
+    function
+    | Ld(A, B) -> A <> B
+    | Add(A, B, C) -> C <> A && C <> B
+    | Sub(A, B, C) -> C <> A && C <> B
+    | Mul(A, B, C) -> C <> A && C <> B
+    | Div(A, B, C) -> C <> A && C <> B
+    | Sqrt(A, B) -> A <> B
+    | Cmp(A, B) -> A <> B
+
+let checkReactionArgs (r, p, n) =
+    not (List.isEmpty r && List.isEmpty p) && n > 0.0
+
+let rec checkCommandArgs =
+    function
+    | Comp(Mod(m)) -> checkModuleArgs m
+    | Comp(Rxn(rxn)) -> checkReactionArgs rxn
+    | _ -> true
+
+let rec validArgsProp =
+    function
+    | [] -> true
+    | Conc(_, c) :: rest -> c >= 0.0 && validArgsProp rest
+    | Step(cmds) :: rest -> List.forall checkCommandArgs cmds && validArgsProp rest
+
 let isWellFormedCrn (CRN prog) =
-    cmpBeforeConditionals prog && noLoadUseProp prog
+    cmpBeforeConditionals prog && noLoadUseProp prog && validArgsProp prog
