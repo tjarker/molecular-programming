@@ -15,6 +15,8 @@ open CrnSimulator
 open CrnExamples
 open CrnVisualizer
 open CrnSimulator
+open CrnGenerator
+open FsCheck
 
 printfn "Molecular Programming Library"
 
@@ -234,11 +236,11 @@ let crnToReactions speed (CRN roots) =
 
     (rxns, init)
 
-let reactionPrettyPrinter (r, p, n) =
-    let formatSpeciesList sps =
+let reactionPrettyFormat (r, p, n) =
+    let speciesListFormat sps =
         List.map (fun (Species s) -> s) sps |> String.concat " + "
 
-    sprintf "%s -> %s" (formatSpeciesList r) (formatSpeciesList p)
+    sprintf "%s -> %s" (speciesListFormat r) (speciesListFormat p)
 
 // let (rnxs,init) = counter |> parse |> crnToReactions
 
@@ -256,27 +258,53 @@ let piApproxL = piApprox, [ "pi"; "divisor1"; "divisor2" ]
 let eulerApproxL = eulerApprox, [ "e" ]
 let integerSqrtL = integerSqrt, [ "n"; "z"; "zpow"; "out"; "znext"; "X0"; "X3" ]
 
-let square = ([
-    ([Species "A"; Species "B"],[Species "A"; Species "B"; Species "C"], 1.0);
-    ([Species "C"],[],1.0)
-    ],
-    Map [(Species "A",2.0);(Species "B",2.0);(Species "C",0.0)]
-)
+let square =
+    ([ ([ Species "A"; Species "B" ], [ Species "A"; Species "B"; Species "C" ], 1.0)
+       ([ Species "C" ], [], 1.0) ],
+     Map [ (Species "A", 2.0); (Species "B", 2.0); (Species "C", 0.0) ])
 
-square |> simulator |> Seq.take 1000 |> visualize ["A";"C"]
+// square |> simulator |> Seq.take 1000 |> visualize [ "A"; "C" ]
 
-let makePlot (crn, labels) =
-    crn
-    |> parse
-    |> (crnToReactions 1.0)
-    |> simulator
-    |> Seq.take 15000
-    |> visualize labels
+// let makePlot (crn, labels) =
+//     crn
+//     |> parse
+//     |> (crnToReactions 1.0)
+//     |> simulator
+//     |> Seq.take 15000
+//     |> visualize labels
 
-makePlot integerSqrtL
+// makePlot integerSqrtL
 
-let printReactions prog =
+let reactionsPrettyPrint prog =
     for rxn in (prog |> parse |> (crnToReactions 1.0) |> fst) do
-        printfn "%s" (reactionPrettyPrinter rxn)
+        printfn "%s" (reactionPrettyFormat rxn)
 
-printReactions integerSqrt
+reactionsPrettyPrint integerSqrt
+
+// Compare state maps
+let compareStateMaps map1 map2 tol =
+    Map.forall
+        (fun sp1 v1 -> // TODO: Maybe we should ignore helper variables?
+            match Map.tryFind sp1 map2 with
+            | Some(v2) -> abs (v1 - v2) < tol
+            | None -> false)
+        map1
+
+let compareStates (State(m1, n1, f1)) (State(s2, n2, f2)) tol =
+    (compareStateMaps m1 s2 tol) && n1 = n2 && f1 = f2
+
+// Compare a sequence of states to determine if they are the same
+let rec compareSeqStates seq1 seq2 tol =
+    if Seq.isEmpty seq1 || Seq.isEmpty seq2 then
+        (Seq.isEmpty seq1) && (Seq.isEmpty seq2)
+    elif not (compareStates (Seq.head seq1) (Seq.head seq2) tol) then
+        false
+    else
+        compareSeqStates (Seq.skip 1 seq1) (Seq.skip 1 seq2) tol
+
+let validate prog numStates tolerance =
+    let interpretedStates = interpreter prog |> Seq.take numStates
+    let compiledStates = prog |> (crnToReactions 1.0) |> simulator |> Seq.take numStates
+    compareSeqStates interpretedStates compiledStates tolerance
+
+validate (gcd |> parse) 2 0.1

@@ -85,9 +85,12 @@ let interpreter (CRN roots) =
 
     let stepCount = List.length steps
 
-    state
-    |> Seq.unfold (fun (State(env, n, flags) as state) ->
-        let stepIndex = n % stepCount
-        let step = steps.[stepIndex]
-        let newState = apply state step |> State.tick
-        Some(state, newState))
+    if stepCount = 0 then
+        Seq.singleton state
+    else
+        state
+        |> Seq.unfold (fun (State(env, n, flags) as state) ->
+            let stepIndex = n % stepCount
+            let step = steps.[stepIndex]
+            let newState = apply state step |> State.tick
+            Some(state, newState))
