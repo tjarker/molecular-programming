@@ -18,6 +18,14 @@ module State =
     let tick (State(env, n, flag)) = State(env, n + 1, flag)
     let getAllSpecies (State(env, _, _)) = Map.keys env |> Seq.toList
 
+    let prettyPrint (State(env, n, flag)) =
+        let mapStr =
+            env
+            |> Map.toList
+            |> List.map (fun (Species sp, conc) -> $"{sp} = {conc}")
+            |> String.concat ", "
+
+        printfn $"State {n}:\n\t{mapStr}\n\t{flag}"
 
 let applyModule state =
     function

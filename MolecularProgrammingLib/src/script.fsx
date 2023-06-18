@@ -263,23 +263,9 @@ let square =
        ([ Species "C" ], [], 1.0) ],
      Map [ (Species "A", 2.0); (Species "B", 2.0); (Species "C", 0.0) ])
 
-// square |> simulator |> Seq.take 1000 |> visualize [ "A"; "C" ]
-
-// let makePlot (crn, labels) =
-//     crn
-//     |> parse
-//     |> (crnToReactions 1.0)
-//     |> simulator
-//     |> Seq.take 15000
-//     |> visualize labels
-
-// makePlot integerSqrtL
-
 let reactionsPrettyPrint prog =
     for rxn in (prog |> parse |> (crnToReactions 1.0) |> fst) do
         printfn "%s" (reactionPrettyFormat rxn)
-
-reactionsPrettyPrint integerSqrt
 
 // Compare state maps
 let compareStateMaps map1 map2 tol =
@@ -291,6 +277,10 @@ let compareStateMaps map1 map2 tol =
         map1
 
 let compareStates (State(m1, n1, f1)) (State(s2, n2, f2)) tol =
+    printfn "-----------------"
+    State.prettyPrint (State(m1, n1, f1))
+    printfn "-----------------"
+    State.prettyPrint (State(s2, n2, f2))
     (compareStateMaps m1 s2 tol) && n1 = n2 && f1 = f2
 
 // Compare a sequence of states to determine if they are the same
@@ -304,7 +294,10 @@ let rec compareSeqStates seq1 seq2 tol =
 
 let validate prog numStates tolerance =
     let interpretedStates = interpreter prog |> Seq.take numStates
-    let compiledStates = prog |> (crnToReactions 1.0) |> simulator |> Seq.take numStates
+
+    let compiledStates =
+        prog |> (crnToReactions 10.0) |> simulator |> Seq.take numStates
+
     compareSeqStates interpretedStates compiledStates tolerance
 
-validate (gcd |> parse) 2 0.1
+validate (parse counter) 2 0.1
