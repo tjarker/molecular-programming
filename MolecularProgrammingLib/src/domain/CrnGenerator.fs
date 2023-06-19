@@ -86,7 +86,7 @@ open CrnTypeChecker
 let crnGen =
     Gen.sized (fun n ->
         gen {
-            let! concs = Gen.listOfLength (3*n) concGen
+            let! concs = Gen.listOfLength (3 * n) concGen
 
             let species =
                 List.map
@@ -95,10 +95,10 @@ let crnGen =
                     | _ -> failwith "expected only concentrations")
                     concs
 
-            let! steps = Gen.listOfLength n (stepGen species |> Gen.resize (n/2))
+            let! steps = Gen.listOfLength n (stepGen species |> Gen.resize (n / 2))
             return CRN(concs @ steps)
-        } |> Gen.where isWellFormedCrn
-    )
+        }
+        |> Gen.where isWellFormedCrn)
 
 type CrnGenerator =
 

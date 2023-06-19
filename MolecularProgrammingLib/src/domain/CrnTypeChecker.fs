@@ -45,8 +45,12 @@ let getModuleSources =
 
 let getModuleOutput =
     function
-    | Ld(_, b) | Sqrt(_, b) -> Some(b)
-    | Add(_, _, c) | Sub(_, _, c) | Mul(_, _, c) | Div(_, _, c) -> Some(c)
+    | Ld(_, b)
+    | Sqrt(_, b) -> Some(b)
+    | Add(_, _, c)
+    | Sub(_, _, c)
+    | Mul(_, _, c)
+    | Div(_, _, c) -> Some(c)
     | Cmp(_) -> None
 
 let getComputationSources =
@@ -122,10 +126,10 @@ let rec validArgsProp =
 let rec singleOutputPerStep acc =
     function
     | [] -> true
-    | Comp(Mod(m)) :: rest -> 
+    | Comp(Mod(m)) :: rest ->
         match getModuleOutput m with
         | None -> singleOutputPerStep acc rest
-        | Some(out) -> not (List.contains out acc) && (singleOutputPerStep (out::acc) rest)
+        | Some(out) -> not (List.contains out acc) && (singleOutputPerStep (out :: acc) rest)
     | _ :: rest -> singleOutputPerStep acc rest
 
 let rec outputProp =
@@ -135,4 +139,7 @@ let rec outputProp =
     | Step(cmds) :: rest -> (singleOutputPerStep [] cmds) && outputProp rest
 
 let isWellFormedCrn (CRN prog) =
-    cmpBeforeConditionals prog && noLoadUseProp prog && validArgsProp prog && outputProp prog
+    cmpBeforeConditionals prog
+    && noLoadUseProp prog
+    && validArgsProp prog
+    && outputProp prog

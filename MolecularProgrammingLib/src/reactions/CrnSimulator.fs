@@ -21,8 +21,10 @@ let netChange sp ((r, p, _): Reaction) =
 
 let concChange ((r, p, k) as (rxn: Reaction)) constProd sp =
     let res = (float k) * (netChange sp rxn |> float) * constProd
+
     if System.Double.IsNaN(res) then
-        printfn "%f * %d * %f = %f" k (netChange sp rxn) constProd res 
+        printfn "%f * %d * %f = %f" k (netChange sp rxn) constProd res
+
     res
 
 let simRxn state changeMap ((r, p, n) as (rxn: Reaction)) =
@@ -50,20 +52,24 @@ let simRxn state changeMap ((r, p, n) as (rxn: Reaction)) =
         uniqueSpecies
 
 
-let nextState rxns (State(_,n,_) as state) =
+let nextState rxns (State(_, n, _) as state) =
 
     let changeMap = List.fold (simRxn state) Map.empty rxns
 
-    Map.fold (fun s' sp dif -> 
-        let was = (State.get sp state)
-        let change = dif * dt
-        let next = was + change
-        if System.Double.IsNaN(next) then
-            State.prettyPrint state
-            printfn "state %d: %f + %f -> %f" n was dif next
-            assert (0 = 1)
-        State.update sp next s'
-    ) state changeMap
+    Map.fold
+        (fun s' sp dif ->
+            let was = (State.get sp state)
+            let change = dif * dt
+            let next = was + change
+
+            if System.Double.IsNaN(next) then
+                State.prettyPrint state
+                printfn "state %d: %f + %f -> %f" n was dif next
+                assert (0 = 1)
+
+            State.update sp next s')
+        state
+        changeMap
     |> State.tick
 
 let simulator (rxns: Reaction list, concs: Map<Species, float>) =

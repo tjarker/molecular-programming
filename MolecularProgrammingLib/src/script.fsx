@@ -147,35 +147,45 @@ let validate numStates tolerance prog =
 
 //printfn "%O" (validate (gcd |> parse) 4 0.1)
 
-let everyNth n seq = 
-    seq |> Seq.mapi (fun i el -> el, i)              // Add index to element
-        |> Seq.filter (fun (el, i) -> i % n = 0) // Take every nth element
-        |> Seq.map fst    
+let everyNth n seq =
+    seq
+    |> Seq.mapi (fun i el -> el, i) // Add index to element
+    |> Seq.filter (fun (el, i) -> i % n = 0) // Take every nth element
+    |> Seq.map fst
 
 //gcd |> parse |> compile 1.0 |> simulator |> Seq.take 100000 |> everyNth 70 |> visualize ["a";"b";"X0";"X3"]
 
 
 
 
-CrnGenerator.initialize()
+CrnGenerator.initialize ()
 
 // Check.Quick (validate 4 0.1)
 
-let c = CRN [Conc (Species "sH", 8.0); Conc (Species "XcRw", 0.0);
-   Conc (Species "sH", 7.0); Conc (Species "HwBq", 10.0);
-   Conc (Species "jY", 0.0); Conc (Species "oT", 3.0);
-   Step [Comp (Mod (Cmp (Species "sH", Species "oT")))];
-   Step
-     [Comp (Mod (Mul (Species "XcRw", Species "sH", Species "oT")));
-      Cond (IfEQ [Mod (Cmp (Species "jY", Species "oT"))]);
-      Comp (Mod (Sub (Species "oT", Species "sH", Species "HwBq")));
-      Cond (IfLE [Mod (Sqrt (Species "XcRw", Species "sH"))]);
-      Comp (Mod (Add (Species "jY", Species "oT", Species "sH")));
-      Cond (IfGE [Mod (Sqrt (Species "HwBq", Species "jY"))]);
-      Comp (Mod (Cmp (Species "sH", Species "HwBq")));
-      Cond (IfLT [Mod (Sqrt (Species "XcRw", Species "sH"))])]]
+let c =
+    CRN
+        [ Conc(Species "sH", 8.0)
+          Conc(Species "XcRw", 0.0)
+          Conc(Species "sH", 7.0)
+          Conc(Species "HwBq", 10.0)
+          Conc(Species "jY", 0.0)
+          Conc(Species "oT", 3.0)
+          Step [ Comp(Mod(Cmp(Species "sH", Species "oT"))) ]
+          Step
+              [ Comp(Mod(Mul(Species "XcRw", Species "sH", Species "oT")))
+                Cond(IfEQ [ Mod(Cmp(Species "jY", Species "oT")) ])
+                Comp(Mod(Sub(Species "oT", Species "sH", Species "HwBq")))
+                Cond(IfLE [ Mod(Sqrt(Species "XcRw", Species "sH")) ])
+                Comp(Mod(Add(Species "jY", Species "oT", Species "sH")))
+                Cond(IfGE [ Mod(Sqrt(Species "HwBq", Species "jY")) ])
+                Comp(Mod(Cmp(Species "sH", Species "HwBq")))
+                Cond(IfLT [ Mod(Sqrt(Species "XcRw", Species "sH")) ]) ] ]
 
 // validate 2 0.1 c
 
 // c |> compile 1.0 |> simulator |> Seq.take 100000 |> everyNth 70 |> visualize ["aP";"IVQo";"KrQ";"B";"kpJC";"zJ";"X0";"X3"]
-c |> interpreter |> Seq.take 100000 |> everyNth 70 |> visualize ["sH"; "XcRw"; "sH"; "HwBq"; "jY"; "oT"]
+c
+|> interpreter
+|> Seq.take 100000
+|> everyNth 70
+|> visualize [ "sH"; "XcRw"; "sH"; "HwBq"; "jY"; "oT" ]
