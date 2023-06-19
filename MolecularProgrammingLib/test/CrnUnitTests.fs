@@ -5,9 +5,6 @@ open CrnParser
 open CrnString
 open Xunit
 
-let removeWhiteSpace (s: string) =
-    s.Replace(" ", "").Replace("\t", "").ReplaceLineEndings("")
-
 [<Fact>]
 let ``Parsing CRN examples`` () =
     for example in examples do
