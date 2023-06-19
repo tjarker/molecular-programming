@@ -4,6 +4,8 @@
 *)
 module CrnExamples
 
+open CrnTypes
+
 let counter =
     "crn={
         conc[c,3 ], 
@@ -95,9 +97,6 @@ let gcd =
     };"
 
 let examples = [ counter; piApprox; eulerApprox; integerSqrt; gcd ]
-
-
-open CrnTypes
 
 let crn1 =
     [ ([ Species "A"; Species "B" ], [ Species "A"; Species "B"; Species "C" ], 1.0)
