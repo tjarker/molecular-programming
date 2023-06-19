@@ -116,7 +116,7 @@ let findPeaks n clocks states =
 
     List.rev peaks
 
-let validate prog numStates tolerance =
+let validate numStates tolerance prog =
     let interpretedStates = interpreter prog |> Seq.take numStates
     let (CRN roots) = prog
 
@@ -133,7 +133,6 @@ let validate prog numStates tolerance =
     let clockSpecies =
         List.map (fun i -> Species $"X{3 * i + 2}") [ 0 .. (numSteps - 1) ]
 
-    printf "%A" clockSpecies
     let compiledStates = prog |> (compile 1.0) |> simulator
 
     let compiledStates =
@@ -157,4 +156,26 @@ let everyNth n seq =
 
 
 
-printfn "%A" (Gen.sample 4 1 (stepGen [Species "A";Species "B";Species "C";Species "D";Species "E";Species "F";Species "G"]) |> List.head)
+
+CrnGenerator.initialize()
+
+// Check.Quick (validate 4 0.1)
+
+let c = CRN [Conc (Species "sH", 8.0); Conc (Species "XcRw", 0.0);
+   Conc (Species "sH", 7.0); Conc (Species "HwBq", 10.0);
+   Conc (Species "jY", 0.0); Conc (Species "oT", 3.0);
+   Step [Comp (Mod (Cmp (Species "sH", Species "oT")))];
+   Step
+     [Comp (Mod (Mul (Species "XcRw", Species "sH", Species "oT")));
+      Cond (IfEQ [Mod (Cmp (Species "jY", Species "oT"))]);
+      Comp (Mod (Sub (Species "oT", Species "sH", Species "HwBq")));
+      Cond (IfLE [Mod (Sqrt (Species "XcRw", Species "sH"))]);
+      Comp (Mod (Add (Species "jY", Species "oT", Species "sH")));
+      Cond (IfGE [Mod (Sqrt (Species "HwBq", Species "jY"))]);
+      Comp (Mod (Cmp (Species "sH", Species "HwBq")));
+      Cond (IfLT [Mod (Sqrt (Species "XcRw", Species "sH"))])]]
+
+// validate 2 0.1 c
+
+// c |> compile 1.0 |> simulator |> Seq.take 100000 |> everyNth 70 |> visualize ["aP";"IVQo";"KrQ";"B";"kpJC";"zJ";"X0";"X3"]
+c |> interpreter |> Seq.take 100000 |> everyNth 70 |> visualize ["sH"; "XcRw"; "sH"; "HwBq"; "jY"; "oT"]

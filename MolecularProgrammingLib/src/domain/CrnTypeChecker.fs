@@ -92,7 +92,6 @@ let rec noLoadUseProp =
     | Step(cmds) :: rest ->
         let (sources, loads) = getCmdsSourcesAndLoads cmds
         let overlap = Set.intersect sources loads
-        printfn "%A\n%A\n%A" sources loads overlap
         (Set.isEmpty overlap) && (noLoadUseProp rest)
 
 let checkModuleArgs =

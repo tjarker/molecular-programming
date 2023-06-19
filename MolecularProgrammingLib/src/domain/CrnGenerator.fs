@@ -72,7 +72,7 @@ let commandGen env =
     Gen.oneof [ Gen.map Comp (computationGen env); Gen.map Cond (conditionalGen env) ]
 
 let concGen =
-    Gen.map2 (fun name value -> Conc(Species name, value)) stringGen (Gen.choose (0, 1000) |> Gen.map float)
+    Gen.map2 (fun name value -> Conc(Species name, value)) stringGen (Gen.choose (0, 10) |> Gen.map float)
 
 let stepGen env =
     gen {
@@ -81,20 +81,24 @@ let stepGen env =
         return Step(cmds)
     }
 
+open CrnTypeChecker
+
 let crnGen =
-    gen {
-        let! concs = Gen.nonEmptyListOf concGen
+    Gen.sized (fun n ->
+        gen {
+            let! concs = Gen.listOfLength (3*n) concGen
 
-        let species =
-            List.map
-                (function
-                | Conc(sp, value) -> sp
-                | _ -> failwith "expected only concentrations")
-                concs
+            let species =
+                List.map
+                    (function
+                    | Conc(sp, value) -> sp
+                    | _ -> failwith "expected only concentrations")
+                    concs
 
-        let! steps = Gen.nonEmptyListOf (stepGen species)
-        return CRN(concs @ steps)
-    }
+            let! steps = Gen.listOfLength n (stepGen species |> Gen.resize (n/2))
+            return CRN(concs @ steps)
+        } |> Gen.where isWellFormedCrn
+    )
 
 type CrnGenerator =
 
