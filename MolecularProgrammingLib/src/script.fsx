@@ -57,12 +57,24 @@ let compareStateMaps map1 map2 tol =
             | None -> false)
         map1
 
-let compareStates (State(m1, n1, f1)) (State(s2, n2, f2)) tol =
+let filterSpeciesMap map =
+    let speciesList = [ xgty; xlty; ygtx; yltx; epsilon ]
+    let enumeratedLbls = [ subHelper; cmpHelper; cmpOffset; oscillatorSeries ]
+
+    Map.filter
+        (fun (Species(sp: string)) _ ->
+            not (List.contains (Species sp) speciesList)
+            && not (List.exists (fun (lbl: string) -> sp.StartsWith(lbl)) enumeratedLbls))
+        map
+
+let compareStates (State(m1, n1, f1)) (State(m2, n2, f2)) tol =
+    let m1 = filterSpeciesMap m1
+    let m2 = filterSpeciesMap m2
     printfn "-----------------"
     State.prettyPrint (State(m1, n1, f1))
     printfn "-----------------"
-    State.prettyPrint (State(s2, n2, f2))
-    (compareStateMaps m1 s2 tol) && n1 = n2 && f1 = f2
+    State.prettyPrint (State(m2, n2, f2))
+    (compareStateMaps m1 m2 tol) && n1 = n2 && f1 = f2
 
 // Compare a sequence of states to determine if they are the same
 let rec compareSeqStates seq1 seq2 tol =
@@ -81,4 +93,25 @@ let validate prog numStates tolerance =
 
     compareSeqStates interpretedStates compiledStates tolerance
 
-validate (parse counter) 2 0.1
+// validate (parse counter) 2 0.1
+
+let interpretedStates = counter |> parse |> interpreter
+
+let compiledStates = counter |> parse |> (crnToReactions 1.0) |> simulator
+
+let numStates = 40
+
+for (State(m1, n1, f1), State(m2, n2, f2)) in Seq.zip interpretedStates compiledStates |> Seq.take numStates do
+    printfn "---------------------"
+    State.prettyPrint (State(filterSpeciesMap m1, n1, f1))
+    printfn "---------------------"
+    State.prettyPrint (State(filterSpeciesMap m2, n2, f2))
+
+// let sqrtCrn =
+//     CRN [ Conc(Species "A", 9.0); Step([ Comp(Mod(Sqrt(Species "A", Species "B"))) ]) ]
+
+// sqrtCrn
+// |> crnToReactions (1.0)
+// |> simulator
+// |> Seq.take 1000
+// |> visualize [ "A"; "B" ]

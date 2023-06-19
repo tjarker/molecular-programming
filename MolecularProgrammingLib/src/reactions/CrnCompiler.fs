@@ -14,6 +14,7 @@ let xlty = Species "XLTY"
 let ygtx = Species "YGTX"
 let yltx = Species "YLTX"
 let cmpHelper = "CmpHelper"
+let oscillatorSeries = "X"
 
 let bindToCatalyst (r, p, n) cat = (cat :: r, cat :: p, n)
 
