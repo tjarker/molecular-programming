@@ -7,55 +7,52 @@ module CrnSimulator
 open CrnTypes
 open CrnInterpreter
 
-let dt = 0.04
+let dt = 0.001
 
-let rec count y =
+let rec count y acc =
     function
-    | [] -> 0
-    | x :: xs -> (if y = x then 1 else 0) + (count y xs)
+    | [] -> acc
+    | x :: xs -> count y (if y = x then acc + 1 else acc) xs
 
 let netChange sp ((r, p, _): Reaction) =
-    let leftCount = count sp r
-    let rightCount = count sp p
+    let leftCount = count sp 0 r
+    let rightCount = count sp 0 p
     rightCount - leftCount
 
-let rxnConcChange sp ((r, p, n) as (rxn: Reaction)) state =
+let concChange ((r, p, k) as (rxn: Reaction)) constProd sp =
+    (float k) * (netChange sp rxn |> float) * constProd
+
+let simRxn state changeMap ((r, p, n) as (rxn: Reaction)) =
     let reactConcs = List.map (fun sp -> State.get sp state) r
-    let ms = List.map (fun sp -> count sp r) r
+    let ms = r |> Seq.countBy id |> Map.ofSeq
 
-    (float n)
-    * (netChange sp rxn |> float)
-    * (List.zip reactConcs ms
-       |> List.map (fun (c, m) -> pown c m)
-       |> List.reduce (fun x y -> x * y))
+    let constProd =
+        List.zip r reactConcs
+        |> List.map (fun (sp, c) -> pown c (Map.find sp ms))
+        |> List.reduce (fun x y -> x * y)
 
-let concChange sp rxns state =
-    List.fold (fun change rxn -> change + (rxnConcChange sp rxn state)) 0.0 rxns
+    let uniqueSpecies = (r @ p) |> Set.ofList |> Set.toList
+
+    List.fold
+        (fun changeMap sp ->
+            let change = concChange rxn constProd sp
+
+            match Map.tryFind sp changeMap with
+            | Some(value) -> Map.add sp (value + change) changeMap
+            | None -> Map.add sp change changeMap)
+        changeMap
+        uniqueSpecies
 
 
 let nextState rxns state =
-    let sps = State.getAllSpecies state
 
-    let changeMap =
-        sps
-        |> List.map (fun sp ->
-            let change = concChange sp rxns state
-            //printfn "%f -> %f" (State.get sp state) change
-            (sp, change))
+    let changeMap = List.fold (simRxn state) Map.empty rxns
 
-    List.fold (fun s' (sp, dif) -> State.update sp ((State.get sp state) + (dif * dt)) s') state changeMap
+    Map.fold (fun s' sp dif -> State.update sp ((State.get sp state) + (dif * dt)) s') state changeMap
     |> State.tick
-
-
-let scanForSpecies rxns =
-    List.fold (fun set (r, p, _) -> Set.unionMany [ set; Set r; Set p ]) Set.empty rxns
-    |> Set.toList
 
 let simulator (rxns: Reaction list, concs: Map<Species, float>) =
 
-    let state = State(concs, 0, (false, false))
-
-    state
-    |> Seq.unfold (fun (State(env, n, flags) as state) ->
-        //printfn "%O" state
-        Some(state, state |> nextState rxns))
+    State(concs, 0, (false, false))
+    |> Seq.unfold (fun state -> Some(state, state |> nextState rxns))
+    |> Seq.cache
