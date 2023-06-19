@@ -81,3 +81,4 @@ let interpreter (CRN roots) =
             let step = steps.[stepIndex]
             let newState = apply state step |> State.tick
             Some(state, newState))
+        |> Seq.cache
