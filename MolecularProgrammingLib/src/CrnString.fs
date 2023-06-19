@@ -1,3 +1,7 @@
+(*
+    Date: XX.06.2023
+    Author: 
+*)
 module CrnString
 
 open CrnTypes

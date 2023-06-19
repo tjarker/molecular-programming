@@ -1,3 +1,7 @@
+(*
+    Date: XX.06.2023
+    Author: 
+*)
 module CrnGenerator
 
 open FsCheck
@@ -22,8 +26,6 @@ let stringGen =
         let ss = List.map string cs
         return String.concat "" ss
     }
-
-
 
 let speciesGen env =
     gen {
