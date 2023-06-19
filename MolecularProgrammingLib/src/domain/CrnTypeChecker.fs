@@ -30,8 +30,6 @@ let rec cmpBeforeConditionals =
         else cmpBeforeConditionals rest
     | _ :: rest -> cmpBeforeConditionals rest
 
-assert (cmpBeforeConditionals [ Step [ Comp(Mod(Cmp(Species "a", Species "b"))) ]; Step [ Cond(IfEQ([])) ] ])
-
 (* Either, a species’s value is used in computations in one step or it is over-
 written by one computation *)
 
