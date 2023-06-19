@@ -1,3 +1,7 @@
+(*
+    Date: XX.06.2023
+    Author: 
+*)
 module CrnTypes
 
 type Species = Species of string
@@ -33,3 +37,28 @@ type Root =
     | Step of Command list
 
 type CRN = CRN of Root list
+
+type Flag = bool * bool
+type StateType = State of Map<Species, float> * int * Flag
+
+module State =
+    let init concs = State(Map concs, 0, (false, false))
+    let update key value (State(env, n, flag)) = State(Map.add key value env, n, flag)
+
+    let get key (State(env, n, flag)) =
+        match Map.tryFind key env with
+        | Some(value) -> value
+        | None -> 0.0
+
+    let setFlag equal greater (State(env, n, flag)) = State(env, n, (equal, greater))
+    let tick (State(env, n, flag)) = State(env, n + 1, flag)
+    let getAllSpecies (State(env, _, _)) = Map.keys env |> Seq.toList
+
+    let prettyPrint (State(env, n, flag)) =
+        let mapStr =
+            env
+            |> Map.toList
+            |> List.map (fun (Species sp, conc) -> $"{sp} = {conc}")
+            |> String.concat ", "
+
+        printfn $"State {n}:\n\t{mapStr}\n\t{flag}"

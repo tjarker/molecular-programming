@@ -30,6 +30,7 @@
     <Compile Include="src/CrnTypeChecker.fs" />
     <Compile Include="src/CrnInterpreter.fs" />
     <Compile Include="src/CrnSimulator.fs" />
+    <Compile Include="src/CrnCompiler.fs" />
     <Compile Include="src/CrnVisualizer.fs" />
     <Compile Include="src/CrnExamples.fs" />
 
