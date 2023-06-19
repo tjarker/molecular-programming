@@ -43,6 +43,8 @@ let piApproxL = piApprox, [ "pi"; "divisor1"; "divisor2" ]
 let eulerApproxL = eulerApprox, [ "e" ]
 let integerSqrtL = integerSqrt, [ "n"; "z"; "zpow"; "out"; "znext"; "X0"; "X3" ]
 
+// gcd |> parse |> crnToReactions 1.0 |> simulator |> Seq.take 8000 |> visualize [ "a"; "b"; "X0"; "X3"; "X1"; "X2" ]
+
 let square =
     ([ ([ Species "A"; Species "B" ], [ Species "A"; Species "B"; Species "C" ], 1.0)
        ([ Species "C" ], [], 1.0) ],
@@ -95,17 +97,17 @@ let validate prog numStates tolerance =
 
 // validate (parse counter) 2 0.1
 
-let interpretedStates = counter |> parse |> interpreter
+// let interpretedStates = counter |> parse |> interpreter
 
-let compiledStates = counter |> parse |> (crnToReactions 1.0) |> simulator
+// let compiledStates = counter |> parse |> (crnToReactions 1.0) |> simulator
 
-let numStates = 40
+// let numStates = 40
 
-for (State(m1, n1, f1), State(m2, n2, f2)) in Seq.zip interpretedStates compiledStates |> Seq.take numStates do
-    printfn "---------------------"
-    State.prettyPrint (State(filterSpeciesMap m1, n1, f1))
-    printfn "---------------------"
-    State.prettyPrint (State(filterSpeciesMap m2, n2, f2))
+// for (State(m1, n1, f1), State(m2, n2, f2)) in Seq.zip interpretedStates compiledStates |> Seq.take numStates do
+//     printfn "---------------------"
+//     State.prettyPrint (State(filterSpeciesMap m1, n1, f1))
+//     printfn "---------------------"
+//     State.prettyPrint (State(filterSpeciesMap m2, n2, f2))
 
 // let sqrtCrn =
 //     CRN [ Conc(Species "A", 9.0); Step([ Comp(Mod(Sqrt(Species "A", Species "B"))) ]) ]
@@ -115,3 +117,43 @@ for (State(m1, n1, f1), State(m2, n2, f2)) in Seq.zip interpretedStates compiled
 // |> simulator
 // |> Seq.take 1000
 // |> visualize [ "A"; "B" ]
+
+let samplingThreshold = 1.8
+
+let nextPeakCenter species states =
+    let fromStart =
+        Seq.skipWhile (fun (State(env, _, _)) -> (Map.find species env) < samplingThreshold) states
+
+    let (State(_, start, _)) = Seq.head fromStart
+
+    let fromStop =
+        Seq.skipWhile (fun (State(env, _, _)) -> (Map.find species env) >= samplingThreshold) fromStart
+    
+    let (State(_, stop, _)) = Seq.head fromStop
+    let center = stop - start
+    let centerState = fromStart |> Seq.skip center |> Seq.head
+    centerState, fromStop
+
+let findPeaks n clocks states =
+    let (peaks, _, _) =
+        (List.fold
+            (fun (peaks, clocks, stop) _ ->
+                let c = List.head clocks
+                let cs = List.tail clocks
+                let (center, nextStop) = nextPeakCenter c stop
+                (center :: peaks, cs @ [ c ], nextStop))
+            ([], clocks, states)
+            [ 1..n ])
+
+    peaks
+
+
+let samplePeaks states =
+    seq {
+        for (State(env, x, _)) in states do
+            yield (Map.find (Species "X2") env)
+    }
+
+let states = gcd |> parse |> crnToReactions 1.0 |> simulator
+
+printfn "%O" (findPeaks 5 [ Species "X2"; Species "X5" ] states)
