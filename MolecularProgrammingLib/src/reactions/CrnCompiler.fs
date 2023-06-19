@@ -180,7 +180,7 @@ let scanForSpecies rxns =
     List.fold (fun set (r, p, _) -> Set.unionMany [ set; Set r; Set p ]) Set.empty rxns
     |> Set.toList
 
-let crnToReactions speed (CRN roots) =
+let compile speed (CRN roots) =
     let concs =
         roots
         |> List.choose (function
@@ -222,5 +222,5 @@ let reactionPrettyFormat (r, p, n) =
     sprintf "%s -> %s" (speciesListFormat r) (speciesListFormat p)
 
 let reactionsPrettyPrint prog =
-    for rxn: Species list * Species list * float in (prog |> (crnToReactions 1.0) |> fst) do
+    for rxn: Species list * Species list * float in (prog |> (compile 1.0) |> fst) do
         printfn "%s" (reactionPrettyFormat rxn)
