@@ -40,6 +40,7 @@ type CRN = CRN of Root list
 
 type Flag = bool * bool
 type StateType = State of Map<Species, float> * int * Flag
+type PositionedStateType = PosState of Map<Species, float> * float * Flag
 
 module State =
     let init concs = State(Map concs, 0, (false, false))
@@ -54,11 +55,14 @@ module State =
     let tick (State(env, n, flag)) = State(env, n + 1, flag)
     let getAllSpecies (State(env, _, _)) = Map.keys env |> Seq.toList
 
-    let prettyPrint (State(env, n, flag)) =
+    
+    let pretty (State(env, n, flag)) =
         let mapStr =
             env
             |> Map.toList
             |> List.map (fun (Species sp, conc) -> $"{sp} = {conc}")
             |> String.concat ", "
 
-        printfn $"State {n}:\n\t{mapStr}\n\t{flag}"
+        sprintf $"State {n}:\n\t{mapStr}\n\t{flag}"
+    let prettyPrint state =
+        printfn "%s" (pretty state)

@@ -6,11 +6,12 @@ module CrnInterpreter
 
 open CrnTypes
 
+let nonNegative x = if x < 0.0 then 0.0 else x
 let applyModule state =
     function
     | Ld(a, b) -> State.update b (State.get a state) state
     | Add(a, b, c) -> State.update c (State.get a state + State.get b state) state
-    | Sub(a, b, c) -> State.update c (State.get a state - State.get b state) state
+    | Sub(a, b, c) -> State.update c (State.get a state - State.get b state |> nonNegative) state
     | Mul(a, b, c) -> State.update c (State.get a state * State.get b state) state
     | Div(a, b, c) -> State.update c (State.get a state / State.get b state) state
     | Sqrt(a, b) -> State.update b (State.get a state |> sqrt) state

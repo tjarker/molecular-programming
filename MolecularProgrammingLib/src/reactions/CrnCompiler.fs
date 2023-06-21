@@ -122,7 +122,7 @@ let creatOscillatorReactions speed (steps: int) =
 
     let inits =
         [ ("X0", 0.9); ($"X{n - 1}", 1.0) ]
-        @ (List.map (fun i -> ($"X{i}", 1e-10)) [ 1 .. (n - 2) ])
+        @ (List.map (fun i -> ($"X{i}", 1e-5)) [ 1 .. (n - 2) ])
 
     (rxns, inits |> List.map (fun (n, v) -> (Species n, v)))
 

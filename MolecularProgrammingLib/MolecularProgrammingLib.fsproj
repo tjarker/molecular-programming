@@ -23,18 +23,29 @@
 
     <!-- Source files -->
     <Compile Include="src/domain/CrnTypes.fs" />
-    <Compile Include="src/domain/CrnTypeChecker.fs" />
-    <Compile Include="src/domain/CrnExamples.fs" />
-    <Compile Include="src/domain/CrnParser.fs" />
-    <Compile Include="src/domain/CrnGenerator.fs" />
 
-    <Compile Include="src/reactions/CrnInterpreter.fs" />
-    <Compile Include="src/reactions/CrnSimulator.fs" />
-    <Compile Include="src/reactions/CrnCompiler.fs" />
+    <Compile Include="src/domain/CrnExamples.fs" />
+
+    
+
+    <Compile Include="src/domain/CrnTypeChecker.fs" />
+    <Compile Include="src/domain/CrnGenerator.fs" />
 
     <Compile Include="src/visualization/CrnString.fs" />
     <Compile Include="src/visualization/CrnDrawTree.fs" />
     <Compile Include="src/visualization/CrnVisualizer.fs" />
+
+    
+    
+    <Compile Include="src/domain/CrnParser.fs" />
+    <Compile Include="src/reactions/CrnCompiler.fs" />
+    
+
+    <Compile Include="src/reactions/CrnInterpreter.fs" />
+    <Compile Include="src/reactions/CrnSimulator.fs" />
+    
+
+    
 
     <!-- Test files -->
     <Compile Include="test/CrnPropTests.fs" />

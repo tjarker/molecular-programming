@@ -6,8 +6,14 @@ module CrnSimulator
 
 open CrnTypes
 open CrnInterpreter
+open System.Diagnostics
+open CrnVisualizer
+open CrnCompiler
 
-let dt = 0.04
+let resultValidater (Species sp) x state =
+    Debug.Assert (not (System.Double.IsNaN(x)), $"[{sp}]/dt was NaN in {State.pretty state}")
+    Debug.Assert (not (System.Double.IsInfinity(x)), $"[{sp}]/dt was Inf in {State.pretty state}") 
+    Debug.Assert (not (System.Double.IsNegativeInfinity(x)), $"[{sp}]/dt was -Inf in {State.pretty state}") 
 
 let rec count y acc =
     function
@@ -20,12 +26,7 @@ let netChange sp ((r, p, _): Reaction) =
     rightCount - leftCount
 
 let concChange ((r, p, k) as (rxn: Reaction)) constProd sp =
-    let res = (float k) * (netChange sp rxn |> float) * constProd
-
-    if System.Double.IsNaN(res) then
-        printfn "%f * %d * %f = %f" k (netChange sp rxn) constProd res
-
-    res
+    (float k) * (netChange sp rxn |> float) * constProd
 
 let simRxn state changeMap ((r, p, n) as (rxn: Reaction)) =
     let reactConcs = List.map (fun sp -> State.get sp state) r
@@ -36,8 +37,7 @@ let simRxn state changeMap ((r, p, n) as (rxn: Reaction)) =
         |> List.map (fun (sp, c) -> pown c (Map.find sp ms))
         |> List.reduce (fun x y -> x * y)
 
-    if System.Double.IsInfinity(constProd) then
-        printfn "%A\n%A" reactConcs ms
+    Debug.Assert (not (System.Double.IsInfinity(constProd)), $"Reactant concentration product was Inf for {r} -> {p} in {State.pretty state}")
 
     let uniqueSpecies = (r @ p) |> Set.ofList |> Set.toList
 
@@ -51,28 +51,44 @@ let simRxn state changeMap ((r, p, n) as (rxn: Reaction)) =
         changeMap
         uniqueSpecies
 
+let nonNegative x = if x < 0.0 then 0.0 else x
 
-let nextState rxns (State(_, n, _) as state) =
+let nextState dt rxns (State(_, n, _) as state) =
 
     let changeMap = List.fold (simRxn state) Map.empty rxns
 
     Map.fold
         (fun s' sp dif ->
-            let was = (State.get sp state)
-            let change = dif * dt
-            let next = was + change
+            let current = (State.get sp state)
+            let next = current + dif * dt |> nonNegative
 
-            if System.Double.IsNaN(next) then
-                State.prettyPrint state
-                printfn "state %d: %f + %f -> %f" n was dif next
-                assert (0 = 1)
+            resultValidater sp next state
 
             State.update sp next s')
         state
         changeMap
     |> State.tick
 
-let simulator (rxns: Reaction list, concs: Map<Species, float>) =
+let simulator dt (rxns: Reaction list, concs: Map<Species, float>) =
     State(concs, 0, (false, false))
-    |> Seq.unfold (fun state -> Some(state, state |> nextState rxns))
+    |> Seq.unfold (fun state -> Some(state, state |> nextState dt rxns))
     |> Seq.cache
+
+let takeEveryNth n s = 
+    Seq.unfold (fun state ->
+        let headOpt = Seq.tryHead state
+        let len = Seq.length state
+        match (headOpt, len) with
+        | Some(head), l when l > n -> Some(head, Seq.skip n state)
+        | Some(head), _ -> Some(head, Seq.empty)
+        | None, _ -> None
+    ) s
+
+let simPlot dt time crn traces = 
+    let simTicks = time / dt |> int
+    let pointsPerPlot = 800
+    let skip = simTicks / pointsPerPlot
+    let simTrace = crn |> compile 1.0 |> simulator dt |> Seq.take simTicks
+    let sparseTrace = if simTicks <= pointsPerPlot then simTrace else takeEveryNth skip simTrace
+    let plotTrace = sparseTrace |> Seq.map (fun (State(env,n,flags)) -> PosState(env,(float n)*dt,flags))
+    visualize false traces plotTrace

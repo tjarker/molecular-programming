@@ -22,10 +22,15 @@ open CrnSimulator
 open CrnGenerator
 open CrnCompiler
 open FsCheck
+open CrnTypeChecker
 
 printfn "Molecular Programming Library"
 
+(*
+    TODO!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    - check in interpreter that command list order is irrelevant
 
+*)
 
 // let (rnxs,init) = counter |> parse |> crnToReactions
 
@@ -35,13 +40,6 @@ printfn "Molecular Programming Library"
 
 // let subCrn = CRN [ Conc(Species "A", 5.0); Conc(Species "B", 2.0); Step([ Comp(Mod(Sub(Species "A", Species "B", Species "C")))])]
 // for rxn in (subCrn |> crnToReactions |> fst) do printfn "%O" (reactionPrettyPrinter rxn)
-
-
-let counterL = counter, [ "c"; "cnext" ]
-let gcdL = gcd, [ "a"; "b"; "X0"; "X3" ]
-let piApproxL = piApprox, [ "pi"; "divisor1"; "divisor2" ]
-let eulerApproxL = eulerApprox, [ "e" ]
-let integerSqrtL = integerSqrt, [ "n"; "z"; "zpow"; "out"; "znext"; "X0"; "X3" ]
 
 let square =
     ([ ([ Species "A"; Species "B" ], [ Species "A"; Species "B"; Species "C" ], 1.0)
@@ -71,6 +69,8 @@ let compareStates tol ((State(mo1, n1, flags1)), (State(mo2, n2, flags2))) =
     let m1 = filterSpeciesMap mo1
     let m2 = filterSpeciesMap mo2
     let res = (compareStateMaps m1 m2 tol)
+
+    printfn $"Comparing interpreter state {n1} with simulator state {n2}..."
 
     if not res then
         printfn "State Mismatch -----------------"
@@ -133,7 +133,7 @@ let validate numStates tolerance prog =
     let clockSpecies =
         List.map (fun i -> Species $"X{3 * i + 2}") [ 0 .. (numSteps - 1) ]
 
-    let compiledStates = prog |> (compile 1.0) |> simulator
+    let compiledStates = prog |> (compile 1.0) |> simulator 0.04
 
     let compiledStates =
         Seq.cache (
@@ -145,47 +145,32 @@ let validate numStates tolerance prog =
 
     compareSeqStates interpretedStates compiledStates tolerance
 
-//printfn "%O" (validate (gcd |> parse) 4 0.1)
-
-let everyNth n seq =
-    seq
-    |> Seq.mapi (fun i el -> el, i) // Add index to element
-    |> Seq.filter (fun (el, i) -> i % n = 0) // Take every nth element
-    |> Seq.map fst
-
-//gcd |> parse |> compile 1.0 |> simulator |> Seq.take 100000 |> everyNth 70 |> visualize ["a";"b";"X0";"X3"]
-
+// simPlot 0.04 170.0 (parse gcd) ["a";"b";"X0";"X3"]
 
 
 
 CrnGenerator.initialize ()
 
-// Check.Quick (validate 4 0.1)
+Check.Quick (validate 4 0.1)
 
-let c =
-    CRN
-        [ Conc(Species "sH", 8.0)
-          Conc(Species "XcRw", 0.0)
-          Conc(Species "sH", 7.0)
-          Conc(Species "HwBq", 10.0)
-          Conc(Species "jY", 0.0)
-          Conc(Species "oT", 3.0)
-          Step [ Comp(Mod(Cmp(Species "sH", Species "oT"))) ]
-          Step
-              [ Comp(Mod(Mul(Species "XcRw", Species "sH", Species "oT")))
-                Cond(IfEQ [ Mod(Cmp(Species "jY", Species "oT")) ])
-                Comp(Mod(Sub(Species "oT", Species "sH", Species "HwBq")))
-                Cond(IfLE [ Mod(Sqrt(Species "XcRw", Species "sH")) ])
-                Comp(Mod(Add(Species "jY", Species "oT", Species "sH")))
-                Cond(IfGE [ Mod(Sqrt(Species "HwBq", Species "jY")) ])
-                Comp(Mod(Cmp(Species "sH", Species "HwBq")))
-                Cond(IfLT [ Mod(Sqrt(Species "XcRw", Species "sH")) ]) ] ]
 
-// validate 2 0.1 c
-
-// c |> compile 1.0 |> simulator |> Seq.take 100000 |> everyNth 70 |> visualize ["aP";"IVQo";"KrQ";"B";"kpJC";"zJ";"X0";"X3"]
-c
-|> interpreter
-|> Seq.take 100000
-|> everyNth 70
-|> visualize [ "sH"; "XcRw"; "sH"; "HwBq"; "jY"; "oT" ]
+(*
+    State Mismatch -----------------
+State 2:
+        Iuk = 4.58444741903007, Mj = 0.7883232963234288, Y = 5.255745322775859, a = 8.87565920558094, hOy = 3.813773178337433, lr = 2.626755393850674, uNOo = 1.7514252243329256, vKp = 3.905691414095768, xO = 4.747032836430687
+        (False, False)
+--------------------------------
+State 917:
+        Iuk = 4.58444741903007, Mj = 0.7883232963234288, Y = 5.255537819532248, a = 8.87565920558094, hOy = 3.813773178337433, lr = 2.626755393850674, uNOo = 1.7514252243329256, vKp = 3.905691414095768, xO = 1.17854278285377
+        (False, False)
+State Mismatch -----------------
+*)
+let failing = CRN [
+    Conc (Species "Mj", 0.7883232963); Conc (Species "xO", 4.747032836);
+   Conc (Species "Y", 5.255745323); Conc (Species "uNOo", 1.751425224);
+   Conc (Species "hOy", 3.813773178); Conc (Species "Iuk", 4.584447419);
+   Conc (Species "lr", 2.626755394); Conc (Species "vKp", 3.905691414);
+   Conc (Species "a", 8.875659206);
+   Step [Comp (Mod (Cmp (Species "vKp", Species "Y")))];
+   Step [Cond (IfGE [Mod (Div (Species "Mj", Species "xO", Species "xO"))])];
+   Step [Cond (IfGE [Mod (Mul (Species "Mj", Species "hOy", Species "Y"))])]]

@@ -132,14 +132,145 @@ let rec singleOutputPerStep acc =
         | Some(out) -> not (List.contains out acc) && (singleOutputPerStep (out :: acc) rest)
     | _ :: rest -> singleOutputPerStep acc rest
 
+
+let exclusivConditions cond = 
+    function
+    | (IfGT _) ->
+        match cond with
+        | (IfLT _) | (IfLE _) | (IfEQ _) -> true
+        | _ -> false
+    | (IfGE _) ->
+        match cond with
+        | (IfLT _) -> true
+        | _ -> false
+    | (IfEQ _) ->
+        match cond with
+        | (IfGT _) | (IfLT _) -> true
+        | _ -> false
+    | (IfLE _) ->
+        match cond with
+        | (IfGT _) -> true
+        | _ -> false 
+    | (IfLT _) ->
+        match cond with
+        | (IfGT _) | (IfGE _) | (IfEQ _) -> true
+        | _ -> false
+
+let moduleGetAssignment = 
+    function
+    | Add(a,b,c) -> [None, c]
+    | Sub(a,b,c) -> [None, c]
+    | Mul(a,b,c) -> [None, c]
+    | Div(a,b,c) -> [None, c]
+    | Sqrt(a,b) -> [None, b]
+    | Ld(a,b) -> [None, b]
+    | Cmp(a,b) -> []
+
+let rec count y acc =
+    function
+    | [] -> acc
+    | x :: xs -> count y (if y = x then acc + 1 else acc) xs
+
+let netChange sp ((r, p, _): Reaction) =
+    let leftCount = count sp 0 r
+    let rightCount = count sp 0 p
+    rightCount - leftCount
+
+let computationAssignments =
+    function
+    | Mod m -> moduleGetAssignment m
+    | Rxn(r,p,n) ->
+        let species = List.distinct (r @ p)
+        let nonCats = List.filter (fun sp -> netChange sp (r,p,n) <> 0) species
+        nonCats |> List.map (fun sp -> None, sp)
+
+let conditionalAssignments cond = 
+    cond 
+        |> getConditionalComputations 
+        |> List.collect computationAssignments 
+        |> List.map (fun (_,sp) -> Some(cond), sp)
+
+let rec forAllUniquePairs pred acc = function
+    | [] | [_] -> acc
+    | x::xs ->
+        let res = List.forall (pred x) xs
+        forAllUniquePairs pred (acc && res) xs
+
+let commandAssignments = 
+    function
+    | Comp c -> computationAssignments c
+    | Cond c -> conditionalAssignments c
+
+let stepAssignments = 
+    function
+    | Conc(_,_) -> []
+    | Step cmds -> List.map commandAssignments cmds |> List.concat
+
+
+let noAssignmentCollision (c0, sp0) (c1,sp1) =
+    match (sp0 = sp1,c0,c1) with
+    | (false,_,_) -> true
+    | (true,Some(con0),Some(con1)) when exclusivConditions con0 con1 -> true
+    | _ -> false
+
+
+
+
+let singleAssignmentsPerStep (roots) = 
+    roots  
+        |> List.map stepAssignments
+        |> List.forall (fun ass -> 
+                forAllUniquePairs noAssignmentCollision true ass
+            )
+
 let rec outputProp =
     function
     | [] -> true
     | Conc(_, c) :: rest -> outputProp rest
     | Step(cmds) :: rest -> (singleOutputPerStep [] cmds) && outputProp rest
 
+
+
+let computationCmpCount = function
+    | Mod(Cmp(_,_)) -> None, 1
+    | _ -> None, 0
+
+let commandCmpCount = function
+    | Comp c -> [computationCmpCount c]
+    | Cond c ->
+        getConditionalComputations c
+            |> List.map computationCmpCount
+            |> List.map (fun (_,cnt) -> Some c, cnt)
+        
+let stepCmpCount = function
+    | Conc(_,_) -> []
+    | Step(cmds) ->
+        cmds 
+            |> List.collect commandCmpCount
+
+let noCmpCollision (c0, cnt0) (c1, cnt1) =
+    let tooManyCmp = (cnt0 <= 1) || (cnt1 <= 1)
+    if tooManyCmp then
+        false
+    else
+        match (cnt0,cnt1,c0,c1) with
+        | (0,_,_,_) -> true
+        | (_,0,_,_) -> true
+        | (1,1,Some(con0),Some(con1)) when exclusivConditions con0 con1 -> true
+        | _ -> false
+    
+let singleCmpPerStep roots = 
+    roots
+        |> List.map stepCmpCount
+        |> List.forall (fun cnts ->
+                forAllUniquePairs noCmpCollision true cnts
+            )
+
+
 let isWellFormedCrn (CRN prog) =
     cmpBeforeConditionals prog
     && noLoadUseProp prog
     && validArgsProp prog
     && outputProp prog
+    && singleAssignmentsPerStep prog
+    && singleCmpPerStep prog

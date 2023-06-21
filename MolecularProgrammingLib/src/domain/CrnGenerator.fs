@@ -7,6 +7,8 @@ module CrnGenerator
 open FsCheck
 open CrnTypes
 
+let myFloatGen = gen { let! f = Arb.generate<NormalFloat>
+                       return NormalFloat.op_Explicit f}
 
 let charsSeqGen c1 c2 =
     seq {
@@ -72,7 +74,7 @@ let commandGen env =
     Gen.oneof [ Gen.map Comp (computationGen env); Gen.map Cond (conditionalGen env) ]
 
 let concGen =
-    Gen.map2 (fun name value -> Conc(Species name, value)) stringGen (Gen.choose (0, 10) |> Gen.map float)
+    Gen.map2 (fun name value -> Conc(Species name, value)) stringGen (myFloatGen |> Gen.filter (fun x -> x > 0.0 && x < 10.0))
 
 let stepGen env =
     gen {
@@ -85,6 +87,7 @@ open CrnTypeChecker
 
 let crnGen =
     Gen.sized (fun n ->
+        
         gen {
             let! concs = Gen.listOfLength (3 * n) concGen
 
@@ -94,7 +97,7 @@ let crnGen =
                     | Conc(sp, value) -> sp
                     | _ -> failwith "expected only concentrations")
                     concs
-
+            
             let! steps = Gen.listOfLength n (stepGen species |> Gen.resize (n / 2))
             return CRN(concs @ steps)
         }
