@@ -17,7 +17,6 @@ type TestFixture() =
 
     [<Property>]
     member __.``Parsed CRN is equal to original``(crn: CRN) = crn = (crn |> crnToString |> parse)
-    
+
     [<Property>]
-    member __.``Output from CRN step does not depend on command order``(crn: CRN) =
-        orderDoesntMatterProp 10 crn
+    member __.``Output from CRN step does not depend on command order``(crn: CRN) = orderDoesntMatterProp 10 crn

@@ -7,6 +7,7 @@ module CrnInterpreter
 open CrnTypes
 
 let nonNegative x = if x < 0.0 then 0.0 else x
+
 let applyModule state =
     function
     | Ld(a, b) -> State.update b (State.get a state) state

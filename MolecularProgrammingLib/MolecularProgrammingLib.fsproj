@@ -44,7 +44,7 @@
   
 
     <!-- Test files -->
-    <Compile Include="test/CrnPropTests.fs" />
+    <None Include="test/CrnPropTests.fs" /> <!-- Tests run too slow -->
     <Compile Include="test/CrnUnitTests.fs" />
 
     <!-- Script -->

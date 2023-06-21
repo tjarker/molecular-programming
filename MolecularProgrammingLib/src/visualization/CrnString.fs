@@ -42,10 +42,8 @@ let commandToString =
 
 let rootToString =
     function
-    | Conc(Species sp, n) -> $"conc[{sp}, {n}]"
-    | Step cs ->
-        let str = cs |> List.map commandToString |> String.concat ", "
-        $"step[{{{str}}}]"
+    | Conc(Species sp, c) -> sprintf "conc[%s, %.0G]" sp c
+    | Step cs -> cs |> List.map commandToString |> String.concat ", " |> sprintf "step[{%s}]"
 
 let crnToString (CRN roots) =
     let rs = roots |> List.map rootToString |> String.concat ", "
