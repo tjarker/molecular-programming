@@ -6,39 +6,34 @@ open CrnInterpreter
 open CrnSimulator
 open CrnCompiler
 
-let shuffle xs = 
+let shuffle xs =
     Gen.shuffle xs |> Gen.map Array.toList |> Gen.sample 0 1 |> List.head
 
-let shuffleConditionalAssignments = 
+let shuffleConditionalAssignments =
     function
-    | IfGT comps -> IfGT (shuffle comps)
-    | IfGE comps -> IfGE (shuffle comps)
-    | IfEQ comps -> IfEQ (shuffle comps)
-    | IfLE comps -> IfLE (shuffle comps)
-    | IfLT comps -> IfLT (shuffle comps)
+    | IfGT comps -> IfGT(shuffle comps)
+    | IfGE comps -> IfGE(shuffle comps)
+    | IfEQ comps -> IfEQ(shuffle comps)
+    | IfLE comps -> IfLE(shuffle comps)
+    | IfLT comps -> IfLT(shuffle comps)
 
 let shuffleCommands =
     function
     | Comp c -> Comp c
-    | Cond c -> Cond (shuffleConditionalAssignments c)
+    | Cond c -> Cond(shuffleConditionalAssignments c)
 
-let shuffleAssignments (CRN roots) = 
-    roots |> List.map 
-        (function
-        | Conc(sp,c) -> Conc(sp,c)
-        | Step(coms) -> 
-            coms
-                |> List.map shuffleCommands
-                |> shuffle
-                |> Step) |> CRN
+let shuffleAssignments (CRN roots) =
+    roots
+    |> List.map (function
+        | Conc(sp, c) -> Conc(sp, c)
+        | Step(coms) -> coms |> List.map shuffleCommands |> shuffle |> Step)
+    |> CRN
 
 let orderDoesntMatterProp steps crn =
     let shuffledCrn = shuffleAssignments crn
     let oriSeq = crn |> interpreter
     let shufSeq = shuffledCrn |> interpreter
-    Seq.zip oriSeq shufSeq
-        |> Seq.take steps
-        |> Seq.forall (fun (s0,s1) -> s0 = s1)
+    Seq.zip oriSeq shufSeq |> Seq.take steps |> Seq.forall (fun (s0, s1) -> s0 = s1)
 
 
 
@@ -113,10 +108,11 @@ let findPeaks n clocks states =
 
     List.rev peaks
 
-let rec countPred pred acc = function 
+let rec countPred pred acc =
+    function
     | [] -> acc
-    | x::xs -> 
-        let nextAcc = if pred x then acc+1 else acc
+    | x :: xs ->
+        let nextAcc = if pred x then acc + 1 else acc
         countPred pred nextAcc xs
 
 let validate tolerance prog =
@@ -124,12 +120,13 @@ let validate tolerance prog =
 
     let (CRN roots) = prog
 
-    let numStates = 
-        countPred (
-            function
-            | Conc(_,_) -> false
-            | Step(_) -> true
-        ) 0 roots
+    let numStates =
+        countPred
+            (function
+            | Conc(_, _) -> false
+            | Step(_) -> true)
+            0
+            roots
 
     let interpretedStates = interpreter prog |> Seq.take numStates
     let (CRN roots) = prog

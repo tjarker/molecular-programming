@@ -11,9 +11,9 @@ open CrnVisualizer
 open CrnCompiler
 
 let resultValidater (Species sp) x state =
-    Debug.Assert (not (System.Double.IsNaN(x)), $"[{sp}]/dt was NaN in {State.pretty state}")
-    Debug.Assert (not (System.Double.IsInfinity(x)), $"[{sp}]/dt was Inf in {State.pretty state}") 
-    Debug.Assert (not (System.Double.IsNegativeInfinity(x)), $"[{sp}]/dt was -Inf in {State.pretty state}") 
+    Debug.Assert(not (System.Double.IsNaN(x)), $"[{sp}]/dt was NaN in {State.pretty state}")
+    Debug.Assert(not (System.Double.IsInfinity(x)), $"[{sp}]/dt was Inf in {State.pretty state}")
+    Debug.Assert(not (System.Double.IsNegativeInfinity(x)), $"[{sp}]/dt was -Inf in {State.pretty state}")
 
 let rec count y acc =
     function
@@ -37,7 +37,10 @@ let simRxn state changeMap ((r, p, n) as (rxn: Reaction)) =
         |> List.map (fun (sp, c) -> pown c (Map.find sp ms))
         |> List.reduce (fun x y -> x * y)
 
-    Debug.Assert (not (System.Double.IsInfinity(constProd)), $"Reactant concentration product was Inf for {r} -> {p} in {State.pretty state}")
+    Debug.Assert(
+        not (System.Double.IsInfinity(constProd)),
+        $"Reactant concentration product was Inf for {r} -> {p} in {State.pretty state}"
+    )
 
     let uniqueSpecies = (r @ p) |> Set.ofList |> Set.toList
 
@@ -74,21 +77,32 @@ let simulator dt (rxns: Reaction list, concs: Map<Species, float>) =
     |> Seq.unfold (fun state -> Some(state, state |> nextState dt rxns))
     |> Seq.cache
 
-let takeEveryNth n s = 
-    Seq.unfold (fun state ->
-        let headOpt = Seq.tryHead state
-        let len = Seq.length state
-        match (headOpt, len) with
-        | Some(head), l when l > n -> Some(head, Seq.skip n state)
-        | Some(head), _ -> Some(head, Seq.empty)
-        | None, _ -> None
-    ) s
+let takeEveryNth n s =
+    Seq.unfold
+        (fun state ->
+            let headOpt = Seq.tryHead state
+            let len = Seq.length state
 
-let simPlot speed dt time crn traces = 
+            match (headOpt, len) with
+            | Some(head), l when l > n -> Some(head, Seq.skip n state)
+            | Some(head), _ -> Some(head, Seq.empty)
+            | None, _ -> None)
+        s
+
+let simPlot speed dt time crn traces =
     let simTicks = time / dt |> int
     let pointsPerPlot = 800
     let skip = simTicks / pointsPerPlot
     let simTrace = crn |> compile speed |> simulator dt |> Seq.take simTicks
-    let sparseTrace = if simTicks <= pointsPerPlot then simTrace else takeEveryNth skip simTrace
-    let plotTrace = sparseTrace |> Seq.map (fun (State(env,n,flags)) -> PosState(env,(float n)*dt,flags))
+
+    let sparseTrace =
+        if simTicks <= pointsPerPlot then
+            simTrace
+        else
+            takeEveryNth skip simTrace
+
+    let plotTrace =
+        sparseTrace
+        |> Seq.map (fun (State(env, n, flags)) -> PosState(env, (float n) * dt, flags))
+
     visualize false traces plotTrace

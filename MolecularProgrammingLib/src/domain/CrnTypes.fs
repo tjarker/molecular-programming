@@ -55,7 +55,7 @@ module State =
     let tick (State(env, n, flag)) = State(env, n + 1, flag)
     let getAllSpecies (State(env, _, _)) = Map.keys env |> Seq.toList
 
-    
+
     let pretty (State(env, n, flag)) =
         let mapStr =
             env
@@ -64,5 +64,5 @@ module State =
             |> String.concat ", "
 
         sprintf $"State {n}:\n\t{mapStr}\n\t{flag}"
-    let prettyPrint state =
-        printfn "%s" (pretty state)
+
+    let prettyPrint state = printfn "%s" (pretty state)

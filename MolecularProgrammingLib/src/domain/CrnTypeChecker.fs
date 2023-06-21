@@ -11,11 +11,13 @@ open CrnTypes
 
     TODO: make load-use prop consider exclusivity of branches
 *)
-let exclusivConditions cond = 
+let exclusivConditions cond =
     function
     | (IfGT _) ->
         match cond with
-        | (IfLT _) | (IfLE _) | (IfEQ _) -> true
+        | (IfLT _)
+        | (IfLE _)
+        | (IfEQ _) -> true
         | _ -> false
     | (IfGE _) ->
         match cond with
@@ -23,15 +25,18 @@ let exclusivConditions cond =
         | _ -> false
     | (IfEQ _) ->
         match cond with
-        | (IfGT _) | (IfLT _) -> true
+        | (IfGT _)
+        | (IfLT _) -> true
         | _ -> false
     | (IfLE _) ->
         match cond with
         | (IfGT _) -> true
-        | _ -> false 
+        | _ -> false
     | (IfLT _) ->
         match cond with
-        | (IfGT _) | (IfGE _) | (IfEQ _) -> true
+        | (IfGT _)
+        | (IfGE _)
+        | (IfEQ _) -> true
         | _ -> false
 
 let findCmp cmds =
@@ -63,23 +68,13 @@ written by one computation *)
 
 let getModuleSources =
     function
-    | Ld(a, b) -> [ a ]
-    | Add(a, b, c) -> [ a; b ]
-    | Sub(a, b, c) -> [ a; b ]
-    | Mul(a, b, c) -> [ a; b ]
-    | Div(a, b, c) -> [ a; b ]
-    | Sqrt(a, b) -> [ a ]
+    | Ld(a, _) -> [ a ]
+    | Add(a, b, _) -> [ a; b ]
+    | Sub(a, b, _) -> [ a; b ]
+    | Mul(a, b, _) -> [ a; b ]
+    | Div(a, b, _) -> [ a; b ]
+    | Sqrt(a, _) -> [ a ]
     | Cmp(a, b) -> [ a; b ]
-
-let getModuleOutput =
-    function
-    | Ld(_, b)
-    | Sqrt(_, b) -> Some(b)
-    | Add(_, _, c)
-    | Sub(_, _, c)
-    | Mul(_, _, c)
-    | Div(_, _, c) -> Some(c)
-    | Cmp(_) -> None
 
 let getComputationSources =
     function
@@ -96,7 +91,7 @@ let getConditionalComputations =
 
 let getCommandSources =
     function
-    | Comp(comp) -> getComputationSources comp |> List.map (fun sp -> (None,sp))
+    | Comp(comp) -> getComputationSources comp |> List.map (fun sp -> (None, sp))
     | Cond(cond) ->
         cond
         |> getConditionalComputations
@@ -111,7 +106,7 @@ let rec getLoads =
         |> getConditionalComputations
         |> List.map Comp
         |> List.collect getLoads
-        |> List.map (fun (_,sp) -> (Some cond, sp))
+        |> List.map (fun (_, sp) -> (Some cond, sp))
     | _ -> []
 
 let getCmdsSourcesAndLoads cmds =
@@ -119,9 +114,9 @@ let getCmdsSourcesAndLoads cmds =
 
 
 let noLoadUseCollision (con0, src) (con1, ld) =
-    match (src = ld,con0,con1) with
-    | (false,_,_) -> true
-    | (true,Some c0, Some c1) when exclusivConditions c0 c1 -> true
+    match (src = ld, con0, con1) with
+    | (false, _, _) -> true
+    | (true, Some c0, Some c1) when exclusivConditions c0 c1 -> true
     | _ -> false
 
 let rootNoLoadUseProp =
@@ -131,16 +126,14 @@ let rootNoLoadUseProp =
         let (sources, loads) = getCmdsSourcesAndLoads cmds
         List.forall (fun src -> List.forall (noLoadUseCollision src) loads) sources
 
-let noLoadUseProp roots =
-    roots 
-        |> List.forall rootNoLoadUseProp
+let noLoadUseProp roots = roots |> List.forall rootNoLoadUseProp
 
-let checkModuleArgs =
+let checkModuleArgs strict =
     function
     | Ld(A, B) -> A <> B
     | Add(A, B, C) -> C <> A && C <> B
-    | Sub(A, B, C) -> A <> B && C <> A && C <> B
-    | Mul(A, B, C) -> A <> B && C <> A && C <> B
+    | Sub(A, B, C) -> (C <> A && C <> B) || (strict && A <> B)
+    | Mul(A, B, C) -> (C <> A && C <> B) || (strict && A <> B)
     | Div(A, B, C) -> C <> A && C <> B
     | Sqrt(A, B) -> A <> B
     | Cmp(A, B) -> A <> B
@@ -148,33 +141,33 @@ let checkModuleArgs =
 let checkReactionArgs (r, p, n) =
     not (List.isEmpty r && List.isEmpty p) && n > 0.0
 
-let checkComputationArgs = 
+let checkComputationArgs strict =
     function
-    | Mod m -> checkModuleArgs m
+    | Mod m -> checkModuleArgs strict m
     | Rxn rxn -> checkReactionArgs rxn
 
-let rec checkCommandArgs =
+let rec checkCommandArgs strict =
     function
-    | Comp comp -> checkComputationArgs comp
-    | Cond cond -> getConditionalComputations cond |> List.forall checkComputationArgs
+    | Comp comp -> checkComputationArgs strict comp
+    | Cond cond -> getConditionalComputations cond |> List.forall (checkComputationArgs strict)
 
-let rec validArgsProp =
+let rec validArgsProp strict =
     function
     | [] -> true
-    | Conc(_, c) :: rest -> c >= 0.0 && validArgsProp rest
-    | Step(cmds) :: rest -> List.forall checkCommandArgs cmds && validArgsProp rest
+    | Conc(_, c) :: rest -> c >= 0.0 && validArgsProp strict rest
+    | Step(cmds) :: rest -> List.forall (checkCommandArgs strict) cmds && validArgsProp strict rest
 
 
 
-let moduleGetAssignment = 
+let moduleGetAssignment =
     function
-    | Add(a,b,c) -> [None, c]
-    | Sub(a,b,c) -> [None, c]
-    | Mul(a,b,c) -> [None, c]
-    | Div(a,b,c) -> [None, c]
-    | Sqrt(a,b) -> [None, b]
-    | Ld(a,b) -> [None, b]
-    | Cmp(a,b) -> []
+    | Add(a, b, c) -> [ None, c ]
+    | Sub(a, b, c) -> [ None, c ]
+    | Mul(a, b, c) -> [ None, c ]
+    | Div(a, b, c) -> [ None, c ]
+    | Sqrt(a, b) -> [ None, b ]
+    | Ld(a, b) -> [ None, b ]
+    | Cmp(a, b) -> []
 
 let rec count y acc =
     function
@@ -189,92 +182,80 @@ let netChange sp ((r, p, _): Reaction) =
 let computationAssignments =
     function
     | Mod m -> moduleGetAssignment m
-    | Rxn(r,p,n) ->
+    | Rxn(r, p, n) ->
         let species = List.distinct (r @ p)
-        let nonCats = List.filter (fun sp -> netChange sp (r,p,n) <> 0) species
+        let nonCats = List.filter (fun sp -> netChange sp (r, p, n) <> 0) species
         nonCats |> List.map (fun sp -> None, sp)
 
-let conditionalAssignments cond = 
-    cond 
-        |> getConditionalComputations 
-        |> List.collect computationAssignments 
-        |> List.map (fun (_,sp) -> Some(cond), sp)
+let conditionalAssignments cond =
+    cond
+    |> getConditionalComputations
+    |> List.collect computationAssignments
+    |> List.map (fun (_, sp) -> Some(cond), sp)
 
-let rec forAllUniquePairs pred acc = function
-    | [] | [_] -> acc
-    | x::xs ->
+let rec forAllUniquePairs pred acc =
+    function
+    | []
+    | [ _ ] -> acc
+    | x :: xs ->
         let res = List.forall (pred x) xs
         forAllUniquePairs pred (acc && res) xs
 
-let commandAssignments = 
+let commandAssignments =
     function
     | Comp c -> computationAssignments c
     | Cond c -> conditionalAssignments c
 
-let stepAssignments = 
+let stepAssignments =
     function
-    | Conc(_,_) -> []
+    | Conc(_, _) -> []
     | Step cmds -> List.map commandAssignments cmds |> List.concat
 
-
-let noAssignmentCollision (c0, sp0) (c1,sp1) =
-    match (sp0 = sp1,c0,c1) with
-    | (false,_,_) -> true
-    | (true,Some(con0),Some(con1)) when exclusivConditions con0 con1 -> true
+let noAssignmentCollision (c0, sp0) (c1, sp1) =
+    match (sp0 = sp1, c0, c1) with
+    | (false, _, _) -> true
+    | (true, Some(con0), Some(con1)) when exclusivConditions con0 con1 -> true
     | _ -> false
 
+let singleAssignmentsPerStep (root) =
+    root |> stepAssignments |> forAllUniquePairs noAssignmentCollision true
 
+let singleAssignmentForAllSteps roots =
+    roots |> List.forall singleAssignmentsPerStep
 
-
-let singleAssignmentsPerStep (root) = 
-    root
-        |> stepAssignments
-        |> forAllUniquePairs noAssignmentCollision true
-            
-
-let singleAssignmentForAllSteps roots = 
-    roots
-        |> List.forall singleAssignmentsPerStep
-
-let computationCmpCount = function
-    | Mod(Cmp(_,_)) -> None, true
+let computationCmpCount =
+    function
+    | Mod(Cmp(_, _)) -> None, true
     | _ -> None, false
 
-let commandCmpCount = function
-    | Comp c -> [computationCmpCount c]
+let commandCmpCount =
+    function
+    | Comp c -> [ computationCmpCount c ]
     | Cond c ->
         getConditionalComputations c
-            |> List.map computationCmpCount
-            |> List.map (fun (_,cnt) -> Some c, cnt)
-        
-let stepCmpCount = function
-    | Conc(_,_) -> []
-    | Step(cmds) ->
-        cmds 
-            |> List.collect commandCmpCount
+        |> List.map computationCmpCount
+        |> List.map (fun (_, cnt) -> Some c, cnt)
+
+let stepCmpCount =
+    function
+    | Conc(_, _) -> []
+    | Step(cmds) -> cmds |> List.collect commandCmpCount
 
 let noCmpCollision (c0, isBr0) (c1, isBr1) =
-    match (isBr0,isBr1,c0,c1) with
-    | (false,_,_,_) -> true
-    | (_,false,_,_) -> true
-    | (true,true,Some(con0),Some(con1)) when exclusivConditions con0 con1 -> true
+    match (isBr0, isBr1, c0, c1) with
+    | (false, _, _, _) -> true
+    | (_, false, _, _) -> true
+    | (true, true, Some(con0), Some(con1)) when exclusivConditions con0 con1 -> true
     | _ -> false
-    
-let singleCmpPerStep root = 
-    root
-        |> stepCmpCount
-        |> forAllUniquePairs noCmpCollision true
-            
 
-let singleCmpForAllSteps roots = 
-    roots
-        |> List.forall singleCmpPerStep
+let singleCmpPerStep root =
+    root |> stepCmpCount |> forAllUniquePairs noCmpCollision true
 
+let singleCmpForAllSteps roots = roots |> List.forall singleCmpPerStep
 
-
-let isWellFormedCrn (CRN prog) =
+let isWellFormedCrn strict (CRN prog) =
     cmpBeforeConditionals prog
     && noLoadUseProp prog
-    && validArgsProp prog
+    && validArgsProp strict prog
     && singleAssignmentForAllSteps prog
     && singleCmpForAllSteps prog

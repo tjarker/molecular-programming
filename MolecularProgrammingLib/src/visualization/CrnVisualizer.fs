@@ -11,11 +11,7 @@ let updateMapFromKV stepped x map k v =
     match Map.tryFind k map with
     | Some(vn) ->
         let (x', y') = List.last vn
-        let points = 
-            if stepped then 
-                [(x, y');(x,v)]
-            else
-                [(x,v)]
+        let points = if stepped then [ (x, y'); (x, v) ] else [ (x, v) ]
         Map.add k (vn @ points) map
     | None -> Map.add k ((if x <> 0.0 then [ (0, 0.0); (x, 0.0) ] else []) @ [ (x, v) ]) map
 
