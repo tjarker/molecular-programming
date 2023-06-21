@@ -84,11 +84,11 @@ let takeEveryNth n s =
         | None, _ -> None
     ) s
 
-let simPlot dt time crn traces = 
+let simPlot speed dt time crn traces = 
     let simTicks = time / dt |> int
     let pointsPerPlot = 800
     let skip = simTicks / pointsPerPlot
-    let simTrace = crn |> compile 1.0 |> simulator dt |> Seq.take simTicks
+    let simTrace = crn |> compile speed |> simulator dt |> Seq.take simTicks
     let sparseTrace = if simTicks <= pointsPerPlot then simTrace else takeEveryNth skip simTrace
     let plotTrace = sparseTrace |> Seq.map (fun (State(env,n,flags)) -> PosState(env,(float n)*dt,flags))
     visualize false traces plotTrace

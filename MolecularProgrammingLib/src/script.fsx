@@ -23,154 +23,51 @@ open CrnGenerator
 open CrnCompiler
 open FsCheck
 open CrnTypeChecker
+open CrnProperties
 
 printfn "Molecular Programming Library"
 
-(*
-    TODO!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-    - check in interpreter that command list order is irrelevant
-
-*)
-
-// let (rnxs,init) = counter |> parse |> crnToReactions
-
-// for i in init do printfn "%O" i
-
-// for rxn in (counter |> parse |> crnToReactions |> fst) do printfn "%O" (reactionPrettyPrinter rxn)
-
-// let subCrn = CRN [ Conc(Species "A", 5.0); Conc(Species "B", 2.0); Step([ Comp(Mod(Sub(Species "A", Species "B", Species "C")))])]
-// for rxn in (subCrn |> crnToReactions |> fst) do printfn "%O" (reactionPrettyPrinter rxn)
-
-let square =
-    ([ ([ Species "A"; Species "B" ], [ Species "A"; Species "B"; Species "C" ], 1.0)
-       ([ Species "C" ], [], 1.0) ],
-     Map [ (Species "A", 2.0); (Species "B", 2.0); (Species "C", 0.0) ])
-
-// Compare state maps
-let compareStateMaps map1 map2 tol =
-    Map.forall
-        (fun sp1 v1 -> // TODO: Maybe we should ignore helper variables?
-            match Map.tryFind sp1 map2 with
-            | Some(v2) -> abs (v1 - v2) < tol
-            | None -> false)
-        map1
-
-let filterSpeciesMap map =
-    let speciesList = [ xgty; xlty; ygtx; yltx; epsilon ]
-    let enumeratedLbls = [ subHelper; cmpHelper; cmpOffset; oscillatorSeries ]
-
-    Map.filter
-        (fun (Species(sp: string)) _ ->
-            not (List.contains (Species sp) speciesList)
-            && not (List.exists (fun (lbl: string) -> sp.StartsWith(lbl)) enumeratedLbls))
-        map
-
-let compareStates tol ((State(mo1, n1, flags1)), (State(mo2, n2, flags2))) =
-    let m1 = filterSpeciesMap mo1
-    let m2 = filterSpeciesMap mo2
-    let res = (compareStateMaps m1 m2 tol)
-
-    printfn $"Comparing interpreter state {n1} with simulator state {n2}..."
-
-    if not res then
-        printfn "State Mismatch -----------------"
-        State.prettyPrint (State(m1, n1, flags1))
-        printfn "--------------------------------"
-        State.prettyPrint (State(m2, n2, flags2))
-        printfn "State Mismatch -----------------"
-
-    res
-
-// Compare a sequence of states to determine if they are the same
-let compareSeqStates seq1 seq2 tol =
-    Seq.forall (compareStates tol) (Seq.zip seq1 seq2)
-
-let samplingThreshold = 1.8
-
-let nextPeakCenter species states =
-
-    let fromStart =
-        Seq.skipWhile (fun (State(env, _, _)) -> (Map.find species env) < samplingThreshold) states
-
-    let (State(_, start, _)) = Seq.head fromStart
-
-    let fromStop =
-        Seq.skipWhile (fun (State(env, _, _)) -> (Map.find species env) >= samplingThreshold) fromStart
-
-    let (State(_, stop, _)) = Seq.head fromStop
-
-    let center = (stop - start) / 2
-    let centerState = fromStart |> Seq.skip center |> Seq.head
-    centerState, fromStop
-
-let findPeaks n clocks states =
-    let (peaks, _, _) =
-        (List.fold
-            (fun (peaks, clocks, stop) _ ->
-                let c = List.head clocks
-                let cs = List.tail clocks
-                let (center, nextStop) = nextPeakCenter c stop
-                (center :: peaks, cs @ [ c ], nextStop))
-            ([], clocks, states)
-            [ 1..n ])
-
-    List.rev peaks
-
-let validate numStates tolerance prog =
-    let interpretedStates = interpreter prog |> Seq.take numStates
-    let (CRN roots) = prog
-
-    let numSteps =
-        List.length (
-            List.choose
-                (fun root ->
-                    match root with
-                    | Step(_) -> Some(root)
-                    | _ -> None)
-                roots
-        )
-
-    let clockSpecies =
-        List.map (fun i -> Species $"X{3 * i + 2}") [ 0 .. (numSteps - 1) ]
-
-    let compiledStates = prog |> (compile 1.0) |> simulator 0.04
-
-    let compiledStates =
-        Seq.cache (
-            seq {
-                yield Seq.head compiledStates
-                yield! compiledStates |> findPeaks numStates clockSpecies
-            }
-        )
-
-    compareSeqStates interpretedStates compiledStates tolerance
-
-// simPlot 0.04 170.0 (parse gcd) ["a";"b";"X0";"X3"]
-
-
-
 CrnGenerator.initialize ()
 
-Check.Quick (validate 4 0.1)
+Check.Quick (validate 0.25)
 
+let failing = CRN [Conc (Species "aH", 1.699490845); Conc (Species "Xc", 1.740912397);
+   Conc (Species "Ob", 2.499320048); Conc (Species "bDD", 4.254531281);
+   Conc (Species "nDQ", 7.268030183); Conc (Species "U", 9.853852977);
+   Conc (Species "HaiN", 3.63440204); Conc (Species "KbU", 6.46520191);
+   Conc (Species "lUx", 0.5089660345); Conc (Species "iNcH", 1.437400814);
+   Conc (Species "D", 2.695950497); Conc (Species "fUz", 6.110783675);
+   Conc (Species "k", 9.483624058); Conc (Species "FuZ", 9.49048188);
+   Conc (Species "k", 2.308705334); Conc (Species "ZeT", 5.470515181);
+   Conc (Species "uJo", 8.59524587); Conc (Species "W", 6.694084604);
+   Conc (Species "Bg", 6.075830584); Conc (Species "wLqF", 1.139410736);
+   Conc (Species "Bg", 6.265143685); Conc (Species "qVkP", 9.446865381);
+   Conc (Species "La", 9.571021408); Conc (Species "nChW", 9.452950511);
+   Conc (Species "sXmR", 2.026808788); Conc (Species "Nc", 5.359855177);
+   Conc (Species "sXm", 8.753448761); Conc (Species "H", 6.501197831);
+   Conc (Species "cRd", 1.604481555); Conc (Species "E", 4.786203251);
+   Conc (Species "JoD", 6.26800643); Conc (Species "eTy", 9.682839608);
+   Conc (Species "J", 9.66735748); Conc (Species "yDs", 2.456101066);
+   Conc (Species "TfUz", 5.657278889); Conc (Species "vK", 8.819317618);
+   Conc (Species "aFuZ", 8.882107633); Conc (Species "Vk", 6.324848462);
+   Conc (Species "aZeT", 1.296633491); Conc (Species "PuJo", 4.711466669);
+   Conc (Species "rW", 9.613946122); Conc (Species "MbgV", 9.824969389);
+   Conc (Species "R", 0.996845641); Conc (Species "mBg", 2.226024338);
+   Conc (Species "B", 5.598864721);
+   Step [Comp (Mod (Add (Species "J", Species "vK", Species "Vk")))];
+   Step [Comp (Mod (Mul (Species "Bg", Species "aFuZ", Species "cRd")))];
+   Step [Comp (Mod (Div (Species "yDs", Species "HaiN", Species "U")))];
+   Step [Comp (Mod (Cmp (Species "bDD", Species "rW")))];
+   Step [Comp (Mod (Add (Species "La", Species "La", Species "k")))];
+   Step [Comp (Mod (Div (Species "uJo", Species "uJo", Species "lUx")))];
+   Step [Comp (Mod (Mul (Species "Vk", Species "k", Species "nDQ")))];
+   Step [Comp (Mod (Div (Species "ZeT", Species "ZeT", Species "KbU")))];
+   Step [Cond (IfGT [Mod (Ld (Species "lUx", Species "aH"))])];
+   Step [Comp (Mod (Sub (Species "cRd", Species "cRd", Species "Bg")))];
+   Step [Comp (Mod (Sub (Species "rW", Species "rW", Species "J")))];
+   Step [Comp (Mod (Sub (Species "uJo", Species "uJo", Species "lUx")))];
+   Step [Comp (Mod (Cmp (Species "PuJo", Species "eTy")))];
+   Step [Cond (IfLE [Mod (Sub (Species "mBg", Species "Bg", Species "D"))])];
+   Step [Comp (Mod (Cmp (Species "Nc", Species "W")))]]
 
-(*
-    State Mismatch -----------------
-State 2:
-        Iuk = 4.58444741903007, Mj = 0.7883232963234288, Y = 5.255745322775859, a = 8.87565920558094, hOy = 3.813773178337433, lr = 2.626755393850674, uNOo = 1.7514252243329256, vKp = 3.905691414095768, xO = 4.747032836430687
-        (False, False)
---------------------------------
-State 917:
-        Iuk = 4.58444741903007, Mj = 0.7883232963234288, Y = 5.255537819532248, a = 8.87565920558094, hOy = 3.813773178337433, lr = 2.626755393850674, uNOo = 1.7514252243329256, vKp = 3.905691414095768, xO = 1.17854278285377
-        (False, False)
-State Mismatch -----------------
-*)
-let failing = CRN [
-    Conc (Species "Mj", 0.7883232963); Conc (Species "xO", 4.747032836);
-   Conc (Species "Y", 5.255745323); Conc (Species "uNOo", 1.751425224);
-   Conc (Species "hOy", 3.813773178); Conc (Species "Iuk", 4.584447419);
-   Conc (Species "lr", 2.626755394); Conc (Species "vKp", 3.905691414);
-   Conc (Species "a", 8.875659206);
-   Step [Comp (Mod (Cmp (Species "vKp", Species "Y")))];
-   Step [Cond (IfGE [Mod (Div (Species "Mj", Species "xO", Species "xO"))])];
-   Step [Cond (IfGE [Mod (Mul (Species "Mj", Species "hOy", Species "Y"))])]]
+// simPlot 0.8 0.04 120.0 failing ["BqV";"CrW";"g";"SubHelper0";"X6"]

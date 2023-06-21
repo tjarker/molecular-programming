@@ -6,6 +6,13 @@ module CrnTypeChecker
 
 open CrnTypes
 
+
+(*
+
+    TODO: make load-use prop consider exclusivity of branches
+*)
+
+
 let findCmp cmds =
     List.exists
         (function
@@ -89,21 +96,24 @@ let rec getLoads =
 let getCmdsSourcesAndLoads cmds =
     (cmds |> List.map getCommandSources |> Set.unionMany, cmds |> List.map getLoads |> Set.unionMany)
 
-let rec noLoadUseProp =
+let rootNoLoadUseProp =
     function
-    | [] -> true
-    | Conc(_, _) :: rest -> noLoadUseProp rest
-    | Step(cmds) :: rest ->
+    | Conc(_, _) -> true
+    | Step(cmds) ->
         let (sources, loads) = getCmdsSourcesAndLoads cmds
         let overlap = Set.intersect sources loads
-        (Set.isEmpty overlap) && (noLoadUseProp rest)
+        (Set.isEmpty overlap)
+
+let noLoadUseProp roots =
+    roots 
+        |> List.forall rootNoLoadUseProp
 
 let checkModuleArgs =
     function
     | Ld(A, B) -> A <> B
     | Add(A, B, C) -> C <> A && C <> B
-    | Sub(A, B, C) -> C <> A && C <> B
-    | Mul(A, B, C) -> C <> A && C <> B
+    | Sub(A, B, C) -> A <> B && C <> A && C <> B
+    | Mul(A, B, C) -> A <> B && C <> A && C <> B
     | Div(A, B, C) -> C <> A && C <> B
     | Sqrt(A, B) -> A <> B
     | Cmp(A, B) -> A <> B
@@ -111,27 +121,21 @@ let checkModuleArgs =
 let checkReactionArgs (r, p, n) =
     not (List.isEmpty r && List.isEmpty p) && n > 0.0
 
+let checkComputationArgs = 
+    function
+    | Mod m -> checkModuleArgs m
+    | Rxn rxn -> checkReactionArgs rxn
+
 let rec checkCommandArgs =
     function
-    | Comp(Mod(m)) -> checkModuleArgs m
-    | Comp(Rxn(rxn)) -> checkReactionArgs rxn
-    | _ -> true
+    | Comp comp -> checkComputationArgs comp
+    | Cond cond -> getConditionalComputations cond |> List.forall checkComputationArgs
 
 let rec validArgsProp =
     function
     | [] -> true
     | Conc(_, c) :: rest -> c >= 0.0 && validArgsProp rest
     | Step(cmds) :: rest -> List.forall checkCommandArgs cmds && validArgsProp rest
-
-let rec singleOutputPerStep acc =
-    function
-    | [] -> true
-    | Comp(Mod(m)) :: rest ->
-        match getModuleOutput m with
-        | None -> singleOutputPerStep acc rest
-        | Some(out) -> not (List.contains out acc) && (singleOutputPerStep (out :: acc) rest)
-    | _ :: rest -> singleOutputPerStep acc rest
-
 
 let exclusivConditions cond = 
     function
@@ -216,20 +220,15 @@ let noAssignmentCollision (c0, sp0) (c1,sp1) =
 
 
 
-let singleAssignmentsPerStep (roots) = 
-    roots  
-        |> List.map stepAssignments
-        |> List.forall (fun ass -> 
-                forAllUniquePairs noAssignmentCollision true ass
-            )
+let singleAssignmentsPerStep (root) = 
+    root
+        |> stepAssignments
+        |> forAllUniquePairs noAssignmentCollision true
+            
 
-let rec outputProp =
-    function
-    | [] -> true
-    | Conc(_, c) :: rest -> outputProp rest
-    | Step(cmds) :: rest -> (singleOutputPerStep [] cmds) && outputProp rest
-
-
+let singleAssignmentForAllSteps roots = 
+    roots
+        |> List.forall singleAssignmentsPerStep
 
 let computationCmpCount = function
     | Mod(Cmp(_,_)) -> None, 1
@@ -259,18 +258,21 @@ let noCmpCollision (c0, cnt0) (c1, cnt1) =
         | (1,1,Some(con0),Some(con1)) when exclusivConditions con0 con1 -> true
         | _ -> false
     
-let singleCmpPerStep roots = 
+let singleCmpPerStep root = 
+    root
+        |> stepCmpCount
+        |> forAllUniquePairs noCmpCollision true
+            
+
+let singleCmpForAllSteps roots = 
     roots
-        |> List.map stepCmpCount
-        |> List.forall (fun cnts ->
-                forAllUniquePairs noCmpCollision true cnts
-            )
+        |> List.forall singleCmpPerStep
+
 
 
 let isWellFormedCrn (CRN prog) =
     cmpBeforeConditionals prog
     && noLoadUseProp prog
     && validArgsProp prog
-    && outputProp prog
-    && singleAssignmentsPerStep prog
-    && singleCmpPerStep prog
+    && singleAssignmentForAllSteps prog
+    && singleCmpForAllSteps prog

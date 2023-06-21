@@ -14,7 +14,7 @@ let applyModule state =
     | Sub(a, b, c) -> State.update c (State.get a state - State.get b state |> nonNegative) state
     | Mul(a, b, c) -> State.update c (State.get a state * State.get b state) state
     | Div(a, b, c) -> State.update c (State.get a state / State.get b state) state
-    | Sqrt(a, b) -> State.update b (State.get a state |> sqrt) state
+    | Sqrt(a, b) -> State.update b (State.get a state |> sqrt |> sqrt) state
     | Cmp(a, b) ->
         let va = State.get a state
         let vb = State.get b state
