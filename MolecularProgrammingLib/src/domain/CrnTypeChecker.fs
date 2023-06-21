@@ -11,7 +11,28 @@ open CrnTypes
 
     TODO: make load-use prop consider exclusivity of branches
 *)
-
+let exclusivConditions cond = 
+    function
+    | (IfGT _) ->
+        match cond with
+        | (IfLT _) | (IfLE _) | (IfEQ _) -> true
+        | _ -> false
+    | (IfGE _) ->
+        match cond with
+        | (IfLT _) -> true
+        | _ -> false
+    | (IfEQ _) ->
+        match cond with
+        | (IfGT _) | (IfLT _) -> true
+        | _ -> false
+    | (IfLE _) ->
+        match cond with
+        | (IfGT _) -> true
+        | _ -> false 
+    | (IfLT _) ->
+        match cond with
+        | (IfGT _) | (IfGE _) | (IfEQ _) -> true
+        | _ -> false
 
 let findCmp cmds =
     List.exists
@@ -62,8 +83,8 @@ let getModuleOutput =
 
 let getComputationSources =
     function
-    | Mod(m) -> Set(getModuleSources m)
-    | Rxn(r, p, n) -> Set r
+    | Mod(m) -> (getModuleSources m)
+    | Rxn(r, p, n) -> r
 
 let getConditionalComputations =
     function
@@ -75,34 +96,40 @@ let getConditionalComputations =
 
 let getCommandSources =
     function
-    | Comp(comp) -> getComputationSources comp
+    | Comp(comp) -> getComputationSources comp |> List.map (fun sp -> (None,sp))
     | Cond(cond) ->
         cond
         |> getConditionalComputations
-        |> List.map getComputationSources
-        |> Set.unionMany
+        |> List.collect getComputationSources
+        |> List.map (fun sp -> (Some cond, sp))
 
 let rec getLoads =
     function
-    | Comp(Mod(Ld(a, b))) -> Set [ b ]
+    | Comp(Mod(Ld(a, b))) -> [ None, b ]
     | Cond(cond) ->
         cond
         |> getConditionalComputations
         |> List.map Comp
-        |> List.map getLoads
-        |> Set.unionMany
-    | _ -> Set.empty
+        |> List.collect getLoads
+        |> List.map (fun (_,sp) -> (Some cond, sp))
+    | _ -> []
 
 let getCmdsSourcesAndLoads cmds =
-    (cmds |> List.map getCommandSources |> Set.unionMany, cmds |> List.map getLoads |> Set.unionMany)
+    (cmds |> List.collect getCommandSources, cmds |> List.collect getLoads)
+
+
+let noLoadUseCollision (con0, src) (con1, ld) =
+    match (src = ld,con0,con1) with
+    | (false,_,_) -> true
+    | (true,Some c0, Some c1) when exclusivConditions c0 c1 -> true
+    | _ -> false
 
 let rootNoLoadUseProp =
     function
     | Conc(_, _) -> true
     | Step(cmds) ->
         let (sources, loads) = getCmdsSourcesAndLoads cmds
-        let overlap = Set.intersect sources loads
-        (Set.isEmpty overlap)
+        List.forall (fun src -> List.forall (noLoadUseCollision src) loads) sources
 
 let noLoadUseProp roots =
     roots 
@@ -137,28 +164,7 @@ let rec validArgsProp =
     | Conc(_, c) :: rest -> c >= 0.0 && validArgsProp rest
     | Step(cmds) :: rest -> List.forall checkCommandArgs cmds && validArgsProp rest
 
-let exclusivConditions cond = 
-    function
-    | (IfGT _) ->
-        match cond with
-        | (IfLT _) | (IfLE _) | (IfEQ _) -> true
-        | _ -> false
-    | (IfGE _) ->
-        match cond with
-        | (IfLT _) -> true
-        | _ -> false
-    | (IfEQ _) ->
-        match cond with
-        | (IfGT _) | (IfLT _) -> true
-        | _ -> false
-    | (IfLE _) ->
-        match cond with
-        | (IfGT _) -> true
-        | _ -> false 
-    | (IfLT _) ->
-        match cond with
-        | (IfGT _) | (IfGE _) | (IfEQ _) -> true
-        | _ -> false
+
 
 let moduleGetAssignment = 
     function
