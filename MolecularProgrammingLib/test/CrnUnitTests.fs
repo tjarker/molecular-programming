@@ -4,7 +4,6 @@ open CrnExamples
 open CrnParser
 open CrnString
 open CrnTypeChecker
-open CrnProperties
 open Xunit
 
 [<Fact>]

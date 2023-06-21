@@ -255,7 +255,7 @@ let singleCmpForAllSteps roots = roots |> List.forall singleCmpPerStep
 
 let isWellFormedCrn strict (CRN prog) =
     cmpBeforeConditionals prog
+    && singleCmpForAllSteps prog
     && noLoadUseProp prog
     && validArgsProp strict prog
     && singleAssignmentForAllSteps prog
-    && singleCmpForAllSteps prog
