@@ -1,0 +1,41 @@
+\setlength{\grammarparsep}{8pt plus 1pt minus 1pt} % increase separation between rules
+\setlength{\grammarindent}{10em} % increase separation between LHS/RHS 
+
+\begin{grammar}
+
+<Crn> ::= `crn=\{' <Root> \{`,' <Root> \} `\}' 
+
+<Root> ::= `conc[' <species> `,' <number> `]' \alt `step[' <Command> \{`,' <Command> \} `]'
+
+<Command> ::= <Computation> \alt <Conditional>
+
+<Computation> ::= `rxn[' <Expression> `,' <Expression> `,' <number> `]' \alt <Module>
+
+<Module> ::= `ld[' <species> `,' <species> `]'
+\alt `add[' <species> `,' <species> `,' <species> `]'
+\alt `sub[' <species> `,' <species> `,' <species> `]'
+\alt `mul[' <species> `,' <species> `,' <species> `]'
+\alt `div[' <species> `,' <species> `,' <species> `]'
+\alt `sqrt[' <species> `,' <species> `]'
+\alt `cmp[' <species> `,' <species> `]'
+
+<Conditional> ::= `ifGT[' <Computation> \{ `,' <Computation> \} `]'
+\alt `ifGE[' <Computation> \{ `,' <Computation> \} `]'
+\alt `ifEQ[' <Computation> \{ `,' <Computation> \} `]'
+\alt `ifLT[' <Computation> \{ `,' <Computation> \} `]'
+\alt `ifLE[' <Computation> \{ `,' <Computation> \} `]'
+
+<Expression> ::= <species> \{ `+' <species> \}
+\end{grammar}
+
+\newpage
+
+
+
+\textbf{Well-formed CRN}
+\begin{itemize}
+    \item \texttt{cmp} before first \textit{Conditional} in the CRN program
+    \item A 2-operand module can't have the same species for both inputs
+    \item A 3-operand module can't have the same species as both input and output
+    \item Either, a \textit{species}'s value is used in \textit{computation}s in one \textit{step} or it is overwritten by one \textit{computation}
+\end{itemize}
