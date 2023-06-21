@@ -147,7 +147,7 @@ let validate tolerance prog =
     let clockSpecies =
         List.map (fun i -> Species $"X{3 * i + 2}") [ 0 .. (numSteps - 1) ]
 
-    let compiledStates = prog |> (compile 1.0) |> simulator 0.04
+    let compiledStates = prog |> (compile 0.5) |> simulator 0.04
 
     let compiledStates =
         Seq.cache (

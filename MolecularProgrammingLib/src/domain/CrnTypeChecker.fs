@@ -231,8 +231,8 @@ let singleAssignmentForAllSteps roots =
         |> List.forall singleAssignmentsPerStep
 
 let computationCmpCount = function
-    | Mod(Cmp(_,_)) -> None, 1
-    | _ -> None, 0
+    | Mod(Cmp(_,_)) -> None, true
+    | _ -> None, false
 
 let commandCmpCount = function
     | Comp c -> [computationCmpCount c]
@@ -247,16 +247,12 @@ let stepCmpCount = function
         cmds 
             |> List.collect commandCmpCount
 
-let noCmpCollision (c0, cnt0) (c1, cnt1) =
-    let tooManyCmp = (cnt0 <= 1) || (cnt1 <= 1)
-    if tooManyCmp then
-        false
-    else
-        match (cnt0,cnt1,c0,c1) with
-        | (0,_,_,_) -> true
-        | (_,0,_,_) -> true
-        | (1,1,Some(con0),Some(con1)) when exclusivConditions con0 con1 -> true
-        | _ -> false
+let noCmpCollision (c0, isBr0) (c1, isBr1) =
+    match (isBr0,isBr1,c0,c1) with
+    | (false,_,_,_) -> true
+    | (_,false,_,_) -> true
+    | (true,true,Some(con0),Some(con1)) when exclusivConditions con0 con1 -> true
+    | _ -> false
     
 let singleCmpPerStep root = 
     root

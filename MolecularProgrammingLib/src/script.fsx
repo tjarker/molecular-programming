@@ -29,45 +29,43 @@ printfn "Molecular Programming Library"
 
 CrnGenerator.initialize ()
 
-Check.Quick (validate 0.25)
+let failing = CRN [Conc (Species "c", 0.6525157659); Conc (Species "Xm", 3.622123494);
+   Conc (Species "zOtI", 7.93367376); Conc (Species "eJ", 8.172075734);
+   Conc (Species "ZoTi", 0.4163264276); Conc (Species "eJ", 1.465519137);
+   Conc (Species "Ty", 4.435126866); Conc (Species "oDiX", 7.386363289);
+   Conc (Species "Q", 9.003783396); Conc (Species "VaP", 1.154198307);
+   Conc (Species "q", 3.894631611); Conc (Species "VuZ", 6.602731802);
+   Conc (Species "k", 8.127802409); Conc (Species "F", 8.281071796);
+   Conc (Species "hWb", 8.137609182); Conc (Species "m", 4.64956357);
+   Conc (Species "Hw", 7.357664021); Conc (Species "wLqF", 7.468080833);
+   Conc (Species "Bg", 9.128430786); Conc (Species "wIxC", 0.8616499287);
+   Conc (Species "Yn", 3.778064707); Conc (Species "Di", 8.095535904);
+   Conc (Species "yNsH", 8.339156474); Conc (Species "Nc", 0.610521422);
+   Conc (Species "sXm", 3.318621873); Conc (Species "U", 4.591068078);
+   Conc (Species "pEj", 7.560675804); Conc (Species "u", 7.551139392);
+   Conc (Species "PeJ", 1.299001615); Conc (Species "eTy", 4.056493752);
+   Conc (Species "J", 6.796927057); Conc (Species "lQf", 8.336936571);
+   Conc (Species "GVaP", 8.480286098); Conc (Species "Lq", 0.2413303766);
+   Conc (Species "gVaP", 3.210938105); Conc (Species "Vk", 7.551859016);
+   Conc (Species "aFuZ", 7.692152581); Conc (Species "ChWb", 7.604654269);
+   Conc (Species "Xm", 1.035962443);
+   Step [Comp (Mod (Mul (Species "yNsH", Species "hWb", Species "eTy")))];
+   Step [Comp (Mod (Div (Species "Xm", Species "GVaP", Species "Q")))];
+   Step [Comp (Mod (Sub (Species "wIxC", Species "gVaP", Species "pEj")))];
+   Step [Comp (Mod (Sqrt (Species "Ty", Species "ChWb")))];
+   Step [Comp (Mod (Mul (Species "Xm", Species "hWb", Species "Ty")))];
+   Step [Comp (Mod (Add (Species "ZoTi", Species "wIxC", Species "VuZ")))];
+   Step [Comp (Mod (Mul (Species "VaP", Species "Di", Species "aFuZ")))];
+   Step [Comp (Mod (Sub (Species "VaP", Species "Q", Species "c")))];
+   Step [Comp (Mod (Div (Species "c", Species "m", Species "oDiX")))];
+   Step [Comp (Mod (Sqrt (Species "Ty", Species "ChWb")))];
+   Step [Comp (Mod (Ld (Species "ZoTi", Species "wIxC")))];
+   Step [Comp (Mod (Sub (Species "VuZ", Species "eJ", Species "Bg")))];
+   Step [Comp (Mod (Ld (Species "c", Species "k")))]]
 
-let failing = CRN [Conc (Species "aH", 1.699490845); Conc (Species "Xc", 1.740912397);
-   Conc (Species "Ob", 2.499320048); Conc (Species "bDD", 4.254531281);
-   Conc (Species "nDQ", 7.268030183); Conc (Species "U", 9.853852977);
-   Conc (Species "HaiN", 3.63440204); Conc (Species "KbU", 6.46520191);
-   Conc (Species "lUx", 0.5089660345); Conc (Species "iNcH", 1.437400814);
-   Conc (Species "D", 2.695950497); Conc (Species "fUz", 6.110783675);
-   Conc (Species "k", 9.483624058); Conc (Species "FuZ", 9.49048188);
-   Conc (Species "k", 2.308705334); Conc (Species "ZeT", 5.470515181);
-   Conc (Species "uJo", 8.59524587); Conc (Species "W", 6.694084604);
-   Conc (Species "Bg", 6.075830584); Conc (Species "wLqF", 1.139410736);
-   Conc (Species "Bg", 6.265143685); Conc (Species "qVkP", 9.446865381);
-   Conc (Species "La", 9.571021408); Conc (Species "nChW", 9.452950511);
-   Conc (Species "sXmR", 2.026808788); Conc (Species "Nc", 5.359855177);
-   Conc (Species "sXm", 8.753448761); Conc (Species "H", 6.501197831);
-   Conc (Species "cRd", 1.604481555); Conc (Species "E", 4.786203251);
-   Conc (Species "JoD", 6.26800643); Conc (Species "eTy", 9.682839608);
-   Conc (Species "J", 9.66735748); Conc (Species "yDs", 2.456101066);
-   Conc (Species "TfUz", 5.657278889); Conc (Species "vK", 8.819317618);
-   Conc (Species "aFuZ", 8.882107633); Conc (Species "Vk", 6.324848462);
-   Conc (Species "aZeT", 1.296633491); Conc (Species "PuJo", 4.711466669);
-   Conc (Species "rW", 9.613946122); Conc (Species "MbgV", 9.824969389);
-   Conc (Species "R", 0.996845641); Conc (Species "mBg", 2.226024338);
-   Conc (Species "B", 5.598864721);
-   Step [Comp (Mod (Add (Species "J", Species "vK", Species "Vk")))];
-   Step [Comp (Mod (Mul (Species "Bg", Species "aFuZ", Species "cRd")))];
-   Step [Comp (Mod (Div (Species "yDs", Species "HaiN", Species "U")))];
-   Step [Comp (Mod (Cmp (Species "bDD", Species "rW")))];
-   Step [Comp (Mod (Add (Species "La", Species "La", Species "k")))];
-   Step [Comp (Mod (Div (Species "uJo", Species "uJo", Species "lUx")))];
-   Step [Comp (Mod (Mul (Species "Vk", Species "k", Species "nDQ")))];
-   Step [Comp (Mod (Div (Species "ZeT", Species "ZeT", Species "KbU")))];
-   Step [Cond (IfGT [Mod (Ld (Species "lUx", Species "aH"))])];
-   Step [Comp (Mod (Sub (Species "cRd", Species "cRd", Species "Bg")))];
-   Step [Comp (Mod (Sub (Species "rW", Species "rW", Species "J")))];
-   Step [Comp (Mod (Sub (Species "uJo", Species "uJo", Species "lUx")))];
-   Step [Comp (Mod (Cmp (Species "PuJo", Species "eTy")))];
-   Step [Cond (IfLE [Mod (Sub (Species "mBg", Species "Bg", Species "D"))])];
-   Step [Comp (Mod (Cmp (Species "Nc", Species "W")))]]
+// simPlot 1.0 0.04 400.0 failing ["GVaP";"Q";"Xm";"X3";"X21"; "c"; "VaP";"SubHelper0"]
 
-// simPlot 0.8 0.04 120.0 failing ["BqV";"CrW";"g";"SubHelper0";"X6"]
+// Check.Quick (validate 0.25)
+
+let (CRN roots) = gcd |> parse
+printfn "%O" (singleCmpForAllSteps roots)
