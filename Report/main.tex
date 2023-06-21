@@ -1,0 +1,61 @@
+\documentclass{article}
+
+% Variables
+\newcommand{\coursenumber}{02257}
+\newcommand{\coursename}{Applied Functional Programming}
+\newcommand{\projectnameshort}{Project 2}
+\newcommand{\projectnamelong}{Project 2: \textit{Molecular Programming Language}}
+\newcommand{\thedate}{\today}
+\renewcommand\thesection{\arabic{section}}
+
+\usepackage{syntax}
+\usepackage{graphicx}
+
+\usepackage{biblatex}
+\addbibresource{references.bib}
+
+\begin{document}
+
+\input{Report/frontmatter/frontpage}
+\newpage
+
+\tableofcontents
+
+% possible todos:
+% opt sim by only calculating concChange for non-catalysts (netchange != 0)
+
+\begin{itemize}
+    \item We changed the multiplicity of cmp molecules (such as xgty) from 1 to 2, because deactivated conditional reactions were else still too active
+    \item The \texttt{sqrt} module for CRN++ returns the 4th root of the argument. As a result, we modified the interpreter output for the 
+    \item Mul(a,b,c) is restricted further by a!=b
+    \item Sub(a,b,c) is also restricted by a!=b
+\end{itemize}
+
+\input{Report/mainmatter/introduction}
+
+\input{Report/mainmatter/crn++}
+
+\section{Interpreter for CRN++} % Steffan
+% used property based testing to verify that order of step commands does not matter
+
+\section{Compiler for CRN++}
+% CRN -> list Reaction + initial concentrations
+% Chemical clock oscillators
+% flag molecules
+% helper molecules
+
+
+\section{Reaction Simulator}
+% Simulate chemical reaction by generating sequence of states
+% for each Rxn do { for each species in reaction { calc concChange and update changeMap }}
+% used PBT to compare interpreter state trace with simulator state trace for random CRNs
+
+\section{Discussion}
+% performance
+
+
+\input{Report/mainmatter/conclusion}
+
+\newpage
+\printbibliography
+\end{document}
