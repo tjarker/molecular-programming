@@ -54,7 +54,7 @@ let pList delim parser =
     parse {
         let! elem = parser
         return! (pListOpt delim (token parser) [ elem ])
-    }
+    } <|> preturn []
 
 let pListBlock l d r parser constr =
     parse {

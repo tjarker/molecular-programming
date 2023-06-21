@@ -67,5 +67,5 @@ let failing = CRN [Conc (Species "c", 0.6525157659); Conc (Species "Xm", 3.62212
 
 // Check.Quick (validate 0.25)
 
-let (CRN roots) = gcd |> parse
-printfn "%O" (singleCmpForAllSteps roots)
+printfn "%O" (parse "crn={};")
+// printfn "%A" (examples |> List.map parse |> List.map (fun (CRN roots) -> roots) |> List.map validArgsProp)
