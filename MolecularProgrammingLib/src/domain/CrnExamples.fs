@@ -100,19 +100,19 @@ let altSub =
     "crn = {
         conc[a, 26 ], conc[b, 11 ],
         conc[one, 1], conc[zero, 0],
-        step [{
+        step[{
             cmp[b, zero ]
         }],
-        step [{
+        step[{
             ifGE[{
                 sub[a, one, anext ],
                 sub[b, one, bnext]
             }]
         }],
-        step [{
+        step[{
             ifGE[{
-                ld [anext, a ],
-                ld [bnext, b]
+                ld[anext, a ],
+                ld[bnext, b]
             }]
         }]
     };"
