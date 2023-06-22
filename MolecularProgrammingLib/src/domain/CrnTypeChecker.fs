@@ -320,3 +320,4 @@ let isWellFormedCrn strict (CRN prog) =
     && noLoadUseProp prog
     && validArgsProp strict prog
     && singleAssignmentForAllSteps prog
+    && dependencyOrderProp (CRN prog)
