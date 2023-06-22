@@ -221,6 +221,6 @@ let reactionPrettyFormat (r, p, n) =
 
     sprintf "%s -> %s" (speciesListFormat r) (speciesListFormat p)
 
-let reactionsPrettyPrint prog =
-    for rxn: Species list * Species list * float in (prog |> (compile 1.0) |> fst) do
+let reactionsPrettyPrint (rxns: Reaction list) =
+    for rxn in rxns do
         printfn "%s" (reactionPrettyFormat rxn)

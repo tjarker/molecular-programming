@@ -8,14 +8,18 @@ Project 2 for the course 02257 Applied Functional Programming
 ## Project structure ##
 The project is structures as a .NET class library called `MolecularProgrammingLib`.
 
-The F# source files are included in the [`src`](MolecularProgrammingLib/src/) directory and organized into three subdirectories:
-- [`domain`](MolecularProgrammingLib/src/domain/):
+The F# source files are included in the [`src`](MolecularProgrammingLib/src/) directory and organized into three subdirectories and a standalone script:
+- [`domain`](MolecularProgrammingLib/src/domain/)
   - [`CrnTypes.fs`](MolecularProgrammingLib/src/domain/CrnTypes.fs): F# type declaration of the main CRN++ syntactic elements.
   - [`CrnParser.fs`](MolecularProgrammingLib/src/domain/CrnParser.fs): Parser for CRN++ programs into F# type representations.
   - [`CrnTypeChecker.fs`](MolecularProgrammingLib/src/domain/CrnTypeChecker.fs): Module used to test whether CRN satisfies *well-formed* properties.
   - [`CrnProperties.fs`](MolecularProgrammingLib/src/domain/CrnTypeChecker.fs): Module used to validate other properties on CRNs, such as comparing interpreted and compiled output reactions and to check the commutative property on step commands.
   - [`CrnGenerator.fs`](MolecularProgrammingLib/src/domain/CrnGenerator.fs): Custom generator for `FsCheck` that constructs *well-formed* CRNs.
   - [`CrnExamples.fs`](MolecularProgrammingLib/src/domain/CrnExamples.fs): Sample CRN++ programs from the paper [[1]](#1).
+- [`reactions`](MolecularProgrammingLib/src/reactions/)
+  - [`CrnInterpreter.fs`](MolecularProgrammingLib/src/reactions/CrnInterpreter.fs): Evaluates the input CRN program and generates a sequence of output states.
+  - [`CrnCompiler.fs`](MolecularProgrammingLib/src/reactions/CrnCompiler.fs): Computes a sequence of output states based on networks of chemical reactions [[1]](#1).
+  - [`Crn`](MolecularProgrammingLib/src/reactions/CrnInterpreter.fs): Evaluates the input CRN program and generates a sequence of output states.
 - [`script.fsx`](MolecularProgrammingLib/src/script.fsx): Demonstration of the implemented functionality.
 
 ## References ##

@@ -1,3 +1,7 @@
+(*
+    Date: 14.06.2023
+    Author: Steffan
+*)
 module CrnUnitTests
 
 open CrnExamples
@@ -15,12 +19,13 @@ let ``Parsing CRN examples`` () =
         Assert.Equal(example', result)
 
 [<Fact>]
-let ``Dependency Order Prop Examples`` () =
-    for ex in examples do
-        Assert.True(ex |> parse |> dependencyOrderProp)
-
-[<Fact>]
 let ``Well-formed CRN examples`` () =
     for example in examples do
         let result = example |> parse |> isWellFormedCrn false
         Assert.True(result, "CRN is not well-formed:\n" + example)
+
+[<Fact>]
+let ``Dependency order CRN examples`` () =
+    for example in examples do
+        let result = example |> parse |> dependencyOrderProp
+        Assert.True(result, "Dependency order property violated:\n" + example)

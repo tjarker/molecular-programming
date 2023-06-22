@@ -96,7 +96,28 @@ let gcd =
         }]
     };"
 
-let examples = [ counter; piApprox; eulerApprox; integerSqrt; gcd ]
+let altSub =
+    "crn = {
+        conc[a, 26 ], conc[b, 11 ],
+        conc[one, 1], conc[zero, 0],
+        step [{
+            cmp[b, zero ]
+        }],
+        step [{
+            ifGE[{
+                sub[a, one, anext ],
+                sub[b, one, bnext]
+            }]
+        }],
+        step [{
+            ifGE[{
+                ld [anext, a ],
+                ld [bnext, b]
+            }]
+        }]
+    };"
+
+let examples = [ counter; piApprox; eulerApprox; integerSqrt; gcd; altSub ]
 
 let crn1 =
     [ ([ Species "A"; Species "B" ], [ Species "A"; Species "B"; Species "C" ], 1.0)
