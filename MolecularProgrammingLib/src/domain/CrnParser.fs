@@ -64,8 +64,6 @@ let pListBlock l d r parser constr =
         return constr (xs)
     }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-/// CRN parsers
 let pSpecies =
     parse {
         let! x = pIdentifier
@@ -97,7 +95,6 @@ let pConditional =
     <|> pListBlock "ifEQ[{" "," "}]" pComputation IfEQ
     <|> pListBlock "ifLT[{" "," "}]" pComputation IfLT
     <|> pListBlock "ifLE[{" "," "}]" pComputation IfLE
-
 
 let pCommand =
     parse {

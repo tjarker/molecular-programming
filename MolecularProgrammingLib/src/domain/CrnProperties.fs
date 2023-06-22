@@ -29,15 +29,11 @@ let shuffleAssignments (CRN roots) =
         | Step(coms) -> coms |> List.map shuffleCommands |> shuffle |> Step)
     |> CRN
 
-let orderDoesntMatterProp steps crn =
+let stepCommandsCommutativeProp steps crn =
     let shuffledCrn = shuffleAssignments crn
     let oriSeq = crn |> interpreter
     let shufSeq = shuffledCrn |> interpreter
     Seq.zip oriSeq shufSeq |> Seq.take steps |> Seq.forall (fun (s0, s1) -> s0 = s1)
-
-
-
-
 
 let compareStateMaps map1 map2 tol =
     Map.forall
@@ -73,7 +69,6 @@ let compareStates tol ((State(mo1, n1, flags1)), (State(mo2, n2, flags2))) =
 
     res
 
-// Compare a sequence of states to determine if they are the same
 let compareSeqStates seq1 seq2 tol =
     Seq.forall (compareStates tol) (Seq.zip seq1 seq2)
 
@@ -116,8 +111,6 @@ let rec countPred pred acc =
         countPred pred nextAcc xs
 
 let validate tolerance prog =
-    printfn "Entering Validate Prop"
-
     let (CRN roots) = prog
 
     let numStates =
@@ -154,6 +147,4 @@ let validate tolerance prog =
             }
         )
 
-    let res = compareSeqStates interpretedStates compiledStates tolerance
-    printfn "Exiting Validate Prop"
-    res
+    compareSeqStates interpretedStates compiledStates tolerance

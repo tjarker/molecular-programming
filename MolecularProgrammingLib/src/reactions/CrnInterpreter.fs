@@ -26,7 +26,6 @@ let applyComputation state =
     | Mod(m) -> applyModule state m
     | Rxn(_, _, _) -> failwith "Reactions are not supported by the interpreter"
 
-
 let applyConditional (State(_, _, (eq, gt)) as state) =
     function
     | IfGT(comps) -> if gt then List.fold applyComputation state comps else state
