@@ -253,6 +253,67 @@ let singleCmpPerStep root =
 
 let singleCmpForAllSteps roots = roots |> List.forall singleCmpPerStep
 
+
+let moduleSrcDest = function 
+    | Add(a,b,c) -> [a;b], Some c
+    | Sub(a,b,c) -> [a;b], Some c
+    | Mul(a,b,c) -> [a;b], Some c
+    | Div(a,b,c) -> [a;b], Some c
+    | Ld(a,b) -> [a], Some b
+    | Sqrt(a,b) -> [a], Some b
+    | Cmp(a,b) -> [a;b], None
+
+let computationSrcDest = function 
+    | Mod m -> moduleSrcDest m
+    | _ -> failwith "Not supported for reactions"
+
+let conditionalSrcDests cond = 
+    Some cond, getConditionalComputations cond
+        |> List.map computationSrcDest
+
+let commandSrcDests = function 
+    | Comp c -> None, [computationSrcDest c]
+    | Cond c -> conditionalSrcDests c
+
+let noLaterProducer (asrc,_) = 
+    List.forall (fun (_,bd) ->
+        match bd with
+        | Some d -> not (List.contains d asrc)
+        | None -> true
+    )
+
+let rec noLaterProducerForAll = 
+    function 
+    | [] -> true
+    | x::xs -> noLaterProducer x xs && (noLaterProducerForAll xs)
+
+let branchIsActive eq gt = 
+    function
+    | Some(IfGT _) -> not eq && gt
+    | Some(IfGE _) -> eq || gt
+    | Some(IfEQ _) -> eq
+    | Some(IfLE _) -> eq || (not gt)
+    | Some(IfLT _) -> (not eq) && (not gt)
+    | None -> true
+
+let chooseBranchesByFlags eq gt xs = 
+    List.collect (fun (condOpt, comps) ->
+            if branchIsActive eq gt condOpt then comps else []
+        ) xs
+
+let dependencyOrderPropStep = 
+    function 
+    | Conc(_,_) -> true
+    | Step cmds ->
+        let srcsDests = List.map commandSrcDests cmds
+        let gt = chooseBranchesByFlags false true srcsDests |> noLaterProducerForAll
+        let eq = chooseBranchesByFlags true false srcsDests |> noLaterProducerForAll
+        let lt = chooseBranchesByFlags false false srcsDests |> noLaterProducerForAll
+        gt && lt && eq
+
+
+let dependencyOrderProp (CRN prog) = List.forall dependencyOrderPropStep prog
+
 let isWellFormedCrn strict (CRN prog) =
     cmpBeforeConditionals prog
     && singleCmpForAllSteps prog
