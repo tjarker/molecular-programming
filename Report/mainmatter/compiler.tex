@@ -1,0 +1,36 @@
+\section{Compiler for CRN++} % Tjark
+% CRN -> list Reaction + initial concentrations
+% Chemical clock oscillators
+% flag molecules
+% helper molecules
+
+The ultimate purpose of the CRN++ language is to describe chemical reaction networks, so compiling the language involves the translation of the program into a sequence of reactions and a description of the initial concentrations of all the involved species. This provides the complete recipe to actually implement the CRN with concrete molecules. 
+
+The translation from modules to reactions is based on what is described by \citeauthor{soloveichik2018a} \cite{soloveichik2018a}. The compiler consists of a collection of functions, each translating a certain level of the AST to reactions and possibly collecting the output of other compiler functions to achieve this task. In what follows, some of the key challenges and our solutions to them will be highlighted.
+
+\subsection{Helper Species}
+The subtraction reactions make use of a helper species $H$. Every subtraction running in parallel with other subtractions requires its own unique helper species for all subtractions to work properly. Since reactions only run in parallel within a step, helper species can be reused between steps. 
+
+We chose to implement the handling of helper species in such a way that more reactions relying on helper species could easily be added. This involves maintaining a per step helper map, which maps a helper species name to an integer providing an instance count. This map is used to  enumerate helper species instances. The initial concentration for a helper species is collected in an initialization map.
+
+\subsection{Sequential Execution}
+Sequential execution in CRNs is enabled by a series of chemical oscillators which spike up one after the other and can be used as catalysts to activate reactions during their respective peaks. In practice, this means that all reactions collected inside a step have to add the clock species associated to this step on either side of their reaction equation. \citeauthor{soloveichik2018a} suggest to use every third peak for actual computation since there is some overlap between successive peaks. Thus $3\times \#Steps$ clock species are required in a CRN.
+
+\citeauthor{soloveichik2018a} do not talk about how to initialize these clock species. It can be seen that each peak has a maximum concentration of 2. Since the oscillator CRN is a closed system and all other clock species have concentrations of close to 0 while another has its peak, the combined concentration of all clock species must be 2. Through experimenting, it was discovered that the initial distribution of $X_{n-1}=0.9$, $X_{0}=1.0$ and $X_i=10^{-10}$ for all other clock species gives an oscillation close to the natural frequency of the system.
+
+Reactions in a step have access to the step number $i$ when creating the reaction equations and can bind their reactions to the species $X_{3i}$.
+
+\subsection{Comparison and Conditional Execution}
+Comparison operations in the CRN++ language rely on an implicit flag species which is set by \texttt{cmp} operations and used by conditional blocks. Since perfect equality is difficult to achieve according to \citeauthor{soloveichik2018a}, a $\pm \epsilon$ equality is used which actually compares $x+\epsilon$ and $y$ as well as $x$ and $y+\epsilon$. This results in four species: \texttt{xgty}, \texttt{xlty}, \texttt{ygtx} and \texttt{yltx} where the first species is offset by $\epsilon$. A table of how these species are used as catalysts for certain conditional blocks is shown in the following:
+
+\begin{center}
+\begin{tabular}{c|c|c|c|c}
+    \texttt{IfGT} & \texttt{IfGE} & \texttt{IfEQ} & \texttt{IfLE} & \texttt{IfLT} \\\hline
+    $2\times\:$\texttt{xgty} & \texttt{xgty} & \texttt{xgty} & \texttt{ygtx} & $2\times\:$\texttt{xlty} \\
+    $2\times\:$\texttt{yltx} & & \texttt{ygtx} & & $2\times\:$\texttt{ygtx}
+\end{tabular}
+\end{center}
+
+The multiplicity of the species for \texttt{IfGT} and \texttt{IfLT} was increased to 2, since it was observed that in cases where only one of the two different species had a high concentration, the controlled reaction exhibited too high activity. For instance, a subtraction under a \texttt{IfLT} took place very slowly even though the two compared species were equal.
+
+In the compiler, the function translating conditionals to reactions, adds the appropriate catalysts to all computations inside its body. Since the comparison operation actually contains two sequential steps (normalize, approximate majority), translating a \texttt{cmp} module results in some equations using $X_{3i}$ as catalysts while others use $X_{3i+1}$. This still leaves $X_{3i+2}$ as an idle cycle to avoid overlap with the next active computation step.

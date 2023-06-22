@@ -1,0 +1,10 @@
+\section{Interpreter for CRN++}\label{sec:interpreter} % Steffan
+% Initial state from conc
+% Recurring steps application
+When running a parsed CRN++ program using our interpreter, we generate an infinite sequence of \hyperref[sec:states]{CRN states}. The initial state is based on the collection of \texttt{conc} elements in the root of the program. Each subsequent state is synthesized by evaluating the commands in the next step of the program and updating the species concentrations accordingly. The application of steps is running in a loop, with the final step being immediately followed by the first step, and therefore the interpreter yields an infinite sequence of states.
+
+%\subsection{Commutative property of step commands}
+% used property based testing to verify that order of step commands does not matter
+Our interpreter evaluates commands in the order given by the source code. This does of course not correspond to what would happen in the actual chemical reactions, where every operation depends on the newest \textit{stable} value in a step (under the assumption that enough time is given for all concentrations to reach steady state). Thus, in reality, the order in which computations are written inside a step should not matter.
+
+In principle the interpreter should be extended to order all commands in a step according to all dependency chains. This would lead to the evaluation of all dependencies of a command before it is evaluated itself. An attempt was made to implement this ordering using a dependency tree, but this proved difficult to implement given the time restrictions. We therefore instead expect the programmer to write commands in dependency order.

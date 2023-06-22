@@ -1,6 +1,9 @@
-\setlength{\grammarparsep}{8pt plus 1pt minus 1pt} % increase separation between rules
-\setlength{\grammarindent}{10em} % increase separation between LHS/RHS 
 
+\begin{appendices}
+%\chapter*{A}
+
+\section{Revised Grammar}
+\begin{Grammar}
 \begin{grammar}
 
 <Crn> ::= `crn=\{' <Root> \{`,' <Root> \} `\}' 
@@ -27,15 +30,31 @@
 
 <Expression> ::= <species> \{ `+' <species> \}
 \end{grammar}
+\caption{Revised Grammar for the CRN++ language.}
+\label{lst:grammar}
+\end{Grammar}
+
+\section{List Parser}
+\begin{Grammar}
+\begin{grammar}
+<ListBlock> ::= <start> <List> <end>
+
+<List> ::= <item> <ItemOpt> \alt $\epsilon$
+
+<ItemOpt> ::= <separator> <item> <ItemOpt> \alt $\epsilon$
+\end{grammar}
+\caption{The grammar used to parse lists.}
+\label{lst:listGrammar}
+\end{Grammar}
 
 \newpage
 
-
-
-\textbf{Well-formed CRN}
-\begin{itemize}
-    \item \texttt{cmp} before first \textit{Conditional} in the CRN program
-    \item A 2-operand module can't have the same species for both inputs
-    \item A 3-operand module can't have the same species as both input and output
-    \item Either, a \textit{species}'s value is used in \textit{computation}s in one \textit{step} or it is overwritten by one \textit{computation}
-\end{itemize}
+\section{F\# Type Declarations}
+\lstinputlisting[
+    style=fsharpstyle,
+    firstline=7,
+    lastline=39,
+    caption={F\# type declarations of the main syntactic categories of CRN++ programs.},
+    label={lst:crn-types}
+]{MolecularProgrammingLib/src/domain/CrnTypes.fs}
+\end{appendices}
