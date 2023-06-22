@@ -1,3 +1,4 @@
+\newgeometry{top=3.0cm}
 \begin{titlepage}
     \begin{center}
         \includegraphics[width=0.15\textwidth]{Report/frontmatter/dtu.pdf}\par\vspace{0.5cm}
@@ -16,6 +17,9 @@
 
     \end{center}    
     \textbf{\textit{Abstract}}\\
-    
+        The CRN++ language presented by \citeauthor{soloveichik2018a} is a domain specific language to describe chemical reaction networks (CRN), which provide a basis for performing computations inside a chemical solutions. The language captures CRNs at the level of arithmetic operations, conditional blocks and groups them into steps separated in time.
+        
+        In this report, we describe the implementation of a parser and interpreter for the CRN++ language, a compiler which translates a CRN to a set of reactions and finally chemical reaction simulator which can be used to accurately simulate compiled CRNs. This is preceded by a thorough analysis of the CRN++ grammar, a definition of a well-formed CRN++ program and associated properties. Our impleme
  \vfill
 \end{titlepage}
+\restoregeometry
