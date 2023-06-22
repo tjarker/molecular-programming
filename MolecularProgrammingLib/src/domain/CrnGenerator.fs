@@ -90,7 +90,7 @@ let stepGen env =
         let! cmds = Gen.listOfLength len (commandGen env)
         return Step(cmds)
     }
-    |> Gen.where (fun step -> rootNoLoadUseProp step && singleAssignmentsPerStep step && singleCmpPerStep step && dependencyOrderPropStep step)
+    |> Gen.where (fun step -> rootNoLoadUseProp step && singleAssignmentsPerStep step && singleCmpPerStep step)
 
 let crnGen =
     Gen.sized (fun n ->
