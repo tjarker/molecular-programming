@@ -25,8 +25,8 @@ let netChange sp ((r, p, _): Reaction) =
     let rightCount = count sp 0 p
     rightCount - leftCount
 
-let concChange ((r, p, k) as (rxn: Reaction)) constProd sp =
-    (float k) * (netChange sp rxn |> float) * constProd
+let concChange ((r, p, k) as (rxn: Reaction)) (nc: int) constProd sp =
+    (float k) * (float nc) * constProd
 
 let simRxn state changeMap ((r, p, n) as (rxn: Reaction)) =
     let reactConcs = List.map (fun sp -> State.get sp state) r
@@ -42,11 +42,14 @@ let simRxn state changeMap ((r, p, n) as (rxn: Reaction)) =
         $"Reactant concentration product was Inf for {r} -> {p} in {State.pretty state}"
     )
 
-    let uniqueSpecies = (r @ p) |> Set.ofList |> Set.toList
+    let uniqueSpecies = 
+        List.distinct (r @ p) 
+            |> List.map (fun sp -> sp, netChange sp rxn)
+            |> List.filter (fun (sp,nc) -> nc <> 0)
 
     List.fold
-        (fun changeMap sp ->
-            let change = concChange rxn constProd sp
+        (fun changeMap (sp, nc) ->
+            let change = concChange rxn nc constProd sp
 
             match Map.tryFind sp changeMap with
             | Some(value) -> Map.add sp (value + change) changeMap
