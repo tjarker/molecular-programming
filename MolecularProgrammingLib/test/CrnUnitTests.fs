@@ -24,6 +24,13 @@ let ``Well-formed CRN examples`` () =
         let result = example |> parse |> isWellFormedCrn false
         Assert.True(result, "CRN is not well-formed:\n" + example)
 
+
+[<Fact>]
+let ``Simulator and interpreter should produce the same results`` () =
+    for example in examples do
+        Assert.True(validate 0.25 (example |> parse), "Simulator and interpreter disagreed for CRN:\n" + example)
+
+
 [<Fact>]
 let ``Dependency order CRN examples`` () =
     for example in examples do
