@@ -1,4 +1,4 @@
-\documentclass{article}
+\documentclass[12pt,a4paper]{report}
 
 % Variables
 \newcommand{\coursenumber}{02257}
@@ -8,8 +8,53 @@
 \newcommand{\thedate}{\today}
 \renewcommand\thesection{\arabic{section}}
 
+\usepackage{newfloat}
 \usepackage{syntax}
+\usepackage[margin=25mm]{geometry}
+\DeclareFloatingEnvironment[
+  % the file extension for the file used to create the list:
+  fileext   = logr,% don't use log here!
+  % the heading for the list:
+  listname  = {List of Grammars},
+  % the name used in captions:
+  name      = Grammar,
+  % the default floating parameters if the environment is used
+  % without optional argument:
+  placement = htb
+]{Grammar}
+\usepackage[page,toc,titletoc,title]{appendix}
+
 \usepackage{graphicx}
+\usepackage{hyperref}
+\usepackage{float}
+\usepackage{listings}
+\usepackage{xcolor}
+\usepackage{parskip}
+\usepackage{comment}
+\usepackage{subcaption}
+\setlength{\parindent}{0pt}
+
+% Define the F# style
+\lstdefinestyle{fsharpstyle}{
+  basicstyle=\ttfamily\small,
+  keywordstyle=\color{blue},
+  commentstyle=\color{green!60!black},
+  stringstyle=\color{purple},
+  showstringspaces=false,
+  numbers=left,
+  numberstyle=\tiny,
+  numbersep=5pt,
+  tabsize=2,
+  captionpos=b,
+  frame=single,
+  breaklines=true,
+  breakatwhitespace=false,
+  morekeywords={type, let, of, do, return, match, with},
+}
+
+% Set the default style to F#
+\lstset{style=fsharpstyle}
+
 
 \usepackage{biblatex}
 \addbibresource{references.bib}
@@ -19,43 +64,45 @@
 \input{Report/frontmatter/frontpage}
 \newpage
 
-\tableofcontents
 
+\tableofcontents
+\thispagestyle{empty}
 % possible todos:
 % opt sim by only calculating concChange for non-catalysts (netchange != 0)
 
+
+\begin{comment}
 \begin{itemize}
     \item We changed the multiplicity of cmp molecules (such as xgty) from 1 to 2, because deactivated conditional reactions were else still too active
     \item The \texttt{sqrt} module for CRN++ returns the 4th root of the argument. As a result, we modified the interpreter output for the 
     \item Mul(a,b,c) is restricted further by a!=b
     \item Sub(a,b,c) is also restricted by a!=b
+    \item debugging
+    \begin{itemize}
+        \item subhelper really high due to a < b in a-b and fall time too long when subhelper is used again
+    \end{itemize}
 \end{itemize}
+\end{comment}
+
+\newpage
+\setcounter{page}{1}
 
 \input{Report/mainmatter/introduction}
 
 \input{Report/mainmatter/crn++}
 
-\section{Interpreter for CRN++} % Steffan
-% used property based testing to verify that order of step commands does not matter
+\input{Report/mainmatter/interpreter}
 
-\section{Compiler for CRN++}
-% CRN -> list Reaction + initial concentrations
-% Chemical clock oscillators
-% flag molecules
-% helper molecules
+\input{Report/mainmatter/compiler}
 
+\input{Report/mainmatter/simulator}
 
-\section{Reaction Simulator}
-% Simulate chemical reaction by generating sequence of states
-% for each Rxn do { for each species in reaction { calc concChange and update changeMap }}
-% used PBT to compare interpreter state trace with simulator state trace for random CRNs
-
-\section{Discussion}
-% performance
-
+\input{Report/mainmatter/discussion}
 
 \input{Report/mainmatter/conclusion}
 
-\newpage
-\printbibliography
+\input{Report/backmatter/bibliography}
+
+\input{Report/backmatter/appendix}
+
 \end{document}

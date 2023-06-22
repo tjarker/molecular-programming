@@ -1,0 +1,12 @@
+\section{Reaction Simulator} % Steffan
+% Simulate chemical reaction by generating sequence of states
+% for each Rxn do { for each species in reaction { calc concChange and update changeMap }}
+Given a network of chemical reactions and initial concentrations, we can simulate the change of each species' concentration over a time step $dt$ using the characteristic ODE as described in \cite{soloveichik2018a}. Folding the computation across all time steps yields an infinite sequence of states much like the output from the \hyperref[sec:interpreter]{CRN++ interpreter}.
+
+\subsection{Validation of Output}
+In order to validate the simulator output against the reference state sequence produced by the \hyperref[sec:interpreter]{interpreter}, the initial sequence must be modified. This is because the compiled sequence is incremented at discrete time steps $\mathrm{d}t$, while the interpreted sequence is incremented after each step in the CRN. To align the two sequences, we use helper functions to sample the compiled sequence at dynamically determined time steps where the catalyzing clock oscillators are at their peak. Thus, for an $n$ step program, the compiled sequence is sampled at successive points where the clock species $X_0, X_3, ..., X_{3 (n-1)}$ have reached local peaks. 
+
+With comparable input sequences, we use property-based testing to validate the simulator output by comparison with the equivalent state sequence produced by the \hyperref[sec:interpreter]{interpreter}. Given the high computational load required to generate states, only a finite number of states are compared. Equality between states is evaluated based on the concentrations of the same species within a given tolerance as well as the values of the conditional flags.  
+% used PBT to compare interpreter state trace with simulator state trace for random CRNs
+% Sampling of simulator output at the peak of next oscillator cycle
+% Compare finite number of equivalent states in the two sequences by checking for equality of species concentrations within a given tolerance
