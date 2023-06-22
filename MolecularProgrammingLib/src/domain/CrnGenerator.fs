@@ -42,15 +42,15 @@ let speciesGen env =
 let pairGen env (g0, g1) constr =
     gen {
         let! a = g0 env
-        let! b = g1 (List.except [a] env)
+        let! b = g1 (List.except [ a ] env)
         return constr (a, b)
     }
 
 let tripleGen env (g0, g1, g2) constr =
     gen {
         let! a = g0 env
-        let! b = g1 (List.except [a] env)
-        let! c = g2 (List.except [a;b] env)
+        let! b = g1 (List.except [ a ] env)
+        let! c = g2 (List.except [ a; b ] env)
         return constr (a, b, c)
     }
 
@@ -90,10 +90,7 @@ let stepGen env =
         let! cmds = Gen.listOfLength len (commandGen env)
         return Step(cmds)
     }
-    |> Gen.where (fun step -> 
-        rootNoLoadUseProp step 
-        && singleAssignmentsPerStep step
-        && singleCmpPerStep step)
+    |> Gen.where (fun step -> rootNoLoadUseProp step && singleAssignmentsPerStep step && singleCmpPerStep step)
 
 let crnGen =
     Gen.sized (fun n ->
